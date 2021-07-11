@@ -63,27 +63,21 @@ intGeneric.getClass() == strGeneric.getClass();
 
 - **子类也是泛型类，子类和父类的泛型类型要一致**
 
-  > ~~~java
-  > 
-  > ~~~
-> class ChildGeneric<T> extends Generic<T>
->
-> ~~~
-> 
-> ~~~
+  > ```java
+  > class ChildGeneric<T> extends Generic<T>
+  > ```
 
   > ```java
   > //父类
   > public class Parent<E> {
-  >  private E value;
-  >  public E getValue() {
-  >      return value;
-  >  }
-  >  public void setValue(E value) {
-  >      this.value = value;
-  >  }
+  > 	private E value;
+  > 	public E getValue() {
+  >   		return value;
+  > 	}
+  > 	public void setValue(E value) {
+  >   		this.value = value;
+  > 	}
   > }
-  > 
   > ```
 
   > ```java
@@ -282,7 +276,7 @@ public <E> void print(E... e){
   >  
   >  public void setKey(T key){
   >      this.key=key;
->  }
+  >      }
   > }
   > ```
   
@@ -292,15 +286,15 @@ public <E> void print(E... e){
   > * 类型擦除后
   > */
   > public class Erasure{
-  >  public Object key;
+  > 	public Object key;
   >  
-  >  public Object getKey(){
-  >      return key;
-  >  }
+  >  	public Object getKey(){
+  >     	return key;
+  >  	}
   >  
-  >  public void setKey(Object key){
-  >      this.key=key;
-  >  }
+  > 	public void setKey(Object key){
+  >     	this.key=key;
+  >  	}
   > }
   > ```
 
@@ -312,15 +306,15 @@ public <E> void print(E... e){
   > * 类型擦除前
   > */
   > public class Erasure <T extends Number>{
-  > public T key;
+  > 	public T key;
   > 
-  > public T getKey(){
-  >   return key;
-  > }
+  > 	public T getKey(){
+  >   		return key;
+  > 	}
   > 
-  > public void setKey(T key){
-  >   this.key=key;
-> }
+  > 	public void setKey(T key){
+  >   		this.key=key;
+  >    	}
   > }
   > ```
   
@@ -341,7 +335,6 @@ public <E> void print(E... e){
   >  }
   > }
   > ```
-
 - **擦除方法中定义的参数**
 
   > ```java
@@ -458,3 +451,4 @@ ArrayList<String>[] listArr = new ArrayList[5];
   > 	 }
   > }
   > ```
+
