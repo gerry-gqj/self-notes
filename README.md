@@ -1,6 +1,6 @@
 # gerry-gqj.github.io
 
-<p>[Java异常机制](./docs/Exception.md)</p>
+* [Java异常机制](./docs/Exception.md)
 
-<p>[Java泛型机制](./docs/Generic.md)</p>
+* [Java泛型机制](./docs/Generic.md)
 
