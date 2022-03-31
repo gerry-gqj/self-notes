@@ -4,10 +4,6 @@
 
 ### 1、内部类
 
-
-
-
-
 ```java
 public class TestLambda01 {
     
@@ -136,7 +132,7 @@ a  -> a
 
 
 
-#### Java Lambda 表达式的原理
+ **Java Lambda 表达式的原理**
 
 后面我们会讲到，Java 8 中的 Lambda 表达式其实是一个特殊的只有一个方法的类的实例。
 
@@ -272,7 +268,7 @@ public class LambdaTester {
 
 
 
-#### Lambda 表达式作用域 ( scope )
+**Lambda 表达式作用域 ( scope )**
 
 因为 Java 8 的 lambda 表达式其实是函数接口的内联实现，也就是匿名内部类，因此，可以引用任何外部的变量或者常量。
 
@@ -423,7 +419,9 @@ Hello，简单教程
 
 
 
-#### lambda 表达式语法
+
+
+**lambda 表达式语法**
 
 lambda 表达式语法非常易于阅读和理解
 
@@ -457,11 +455,11 @@ lambda 表达式语法看起来像
 
 
 
-#### Java 8 lambda 表达式的一些使用范例
 
 
+**Java 8 lambda 表达式的一些使用范例**
 
-##### 在 `Runnable` 中使用 lambda 表达式
+**在 `Runnable` 中使用 lambda 表达式**
 
 下面这个范例中，我们将运行一个 Runnable 线程。
 
@@ -527,7 +525,7 @@ public class LambdaTester
 
 
 
-##### 在用户自定义的函数接口中使用 lambda 表达式
+**在用户自定义的函数接口中使用 lambda 表达式**
 
 在下面这个范例中，我们将创建自己的函数接口，我们先用普通的方式来实现一下
 
@@ -596,7 +594,7 @@ public class LambdaTester{
 
 
 
-##### 在 `Comparator` 中使用 lambda 表达式
+**在 `Comparator` 中使用 lambda 表达式**
 
 现在，我们来看看 `Comparator` 接口，了解下如何使用 lambda 表达式对包含字符串的集合进行排序。
 
@@ -648,7 +646,7 @@ Shyam
 
 
 
-##### 使用 Lambda 表达式实现函数接口来迭代集合
+**使用 Lambda 表达式实现函数接口来迭代集合**
 
 Java 8 中引入了 `java.util.function` 包。这个包提供了 `java.util.function.Function` 接口，我们可以在这个接口的帮助下，使用 Lambda 表达式来迭代集合。
 
@@ -733,7 +731,7 @@ Kabir: 18
 
 
 
-### Java 8 方法引用
+### 3、Java 8 方法引用
 
 Java 8 中新增加了 **方法引用** 这个概念。 但，什么是方法引用呢 ？
 
