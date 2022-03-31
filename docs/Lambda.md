@@ -1,4 +1,86 @@
-### Lambda表达式和方法引用
+## 内部类、Lambda表达式、方法引用
+
+
+
+### 1、内部类
+
+
+
+
+
+```java
+public class TestLambda01 {
+    
+    
+    interface MyLambda01{
+   		void Lambda(int a);
+	}
+    
+	/*
+	* 1.内部类
+	* **/
+	class MyLambda01Impl1 implements MyLambda01{
+		@Override
+    	public void Lambda(int a) {
+        	System.out.println("Lambda01..."+"a="+a);
+    	}
+    
+    /*
+    * 2.静态内部类
+    * **/
+    static class MyLambda01Impl02 implements MyLambda01{
+        @Override
+        public void Lambda(int a) {
+            System.out.println("Lambda02..."+"a="+a);
+        }
+    }
+
+    public static void main(String[] args) {
+        /*
+         * 3.局部内部类
+         * */
+        class MyLambda01Impl03 implements MyLambda01{
+            @Override
+            public void Lambda(int a) {
+                System.out.println("Lambda03..."+"a="+a);
+            }
+        }
+
+        /*
+         * 4.匿名内部类
+         * */
+        MyLambda01 myLambdaImpl04 = new MyLambda01() {
+            @Override
+            public void Lambda(int a) {
+                System.out.println("Lambda04..."+"a="+a);
+            }
+        };
+
+
+        MyLambda01 myLambdaImpl01 = new MyLambda01Impl1();
+        myLambdaImpl01.Lambda(1);
+
+        MyLambda01Impl02 myLambdaImpl02 = new MyLambda01Impl02();
+        myLambdaImpl02.Lambda(2);
+
+        MyLambda01Impl03 myLambdaImpl03 = new MyLambda01Impl03();
+        myLambdaImpl03.Lambda(3);
+
+        myLambdaImpl04.Lambda(4);
+    }
+
+}
+
+
+
+}
+```
+
+
+
+
+
+### 2、Lambda表达式和方法引用
 
 
 
