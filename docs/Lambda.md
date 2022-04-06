@@ -9,21 +9,6 @@
 
 ```java
 public class TestLambda01 {
-    
-    
-    interface MyLambda01{
-   		void Lambda(int a);
-	}
-    
-	/*
-	* 1.内部类
-	* **/
-	class MyLambda01Impl1 implements MyLambda01{
-		@Override
-    	public void Lambda(int a) {
-        	System.out.println("Lambda01..."+"a="+a);
-    	}
-    
     /*
     * 2.静态内部类
     * **/
@@ -67,11 +52,21 @@ public class TestLambda01 {
 
         myLambdaImpl04.Lambda(4);
     }
-
 }
 
 
-
+interface MyLambda01{
+	void Lambda(int a);
+}
+ 
+/*
+* 1.内部类
+* **/
+class MyLambda01Impl1 implements MyLambda01{
+	@Override
+ 	public void Lambda(int a) {
+     	System.out.println("Lambda01..."+"a="+a);
+    }
 }
 ```
 
