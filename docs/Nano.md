@@ -83,7 +83,6 @@ Ctrl+L	Refresh the screen
 
 
 
-
 nano的快捷键概述      
 编辑器的按键及其功能         
 
