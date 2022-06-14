@@ -576,12 +576,152 @@ kill -9 PID
 kill -9 26993
 ```
 
-
-
 # 6.基本环境配置
 
 ```bash
 apt-get install bash-completion
+
 apt install build-essential
 ```
+
+
+
+## /etc/sudoers
+
+```
+:~# nano /etc/sudoers
+```
+
+The file does not have too many lines. In the user privilege specification section, you will find a line like this.
+
+```
+root ALL=(ALL:ALL) ALL
+```
+
+Under it, add your user and leave the rest the same. Something like that.
+
+```
+your-user ALL=(ALL:ALL) ALL
+```
+
+
+
+# 7.shell
+
+
+
+## 1.Login  Non-Login Shell
+
+[What is a Shell in UNIX-Based Systems](https://www.delftstack.com/howto/linux/difference-between-a-login-shell-and-a-non-login-shell/#what-is-a-shell-in-unix-based-systems)
+
+A shell in UNIX-based systems is an interface between the user and the operating system’s kernel. It takes input from the user and sends it to the kernel, and it also takes the result from the kernel to the user.
+
+There are two types of shells, the login shell and the non-login shell.
+
+Every shell executes a series of start-up scripts to set up the environment once it is started. The scripts have different uses, and they all affect the environment.
+
+Subsequent scripts can override the values that the previous scripts have set up.
+
+[What is a Login Shell in UNIX-Based Systems](https://www.delftstack.com/howto/linux/difference-between-a-login-shell-and-a-non-login-shell/#what-is-a-login-shell-in-unix-based-systems)
+
+A login shell is the first process that is started after successfully logging in using `/bin/login` by reading the `/etc/passwd` file. The login shell executes under your user ID.
+
+A login shell is executed when you log in using the terminal, switch to another user, or use SSH.
+
+Once a login shell is started, it executes a collection of start-up scripts to set up the shell environment. The following scripts are executed.
+
+1. The login process executes `/etc/profile`.
+2. `/etc/profile` executes the scripts in `/etc/profile.d`
+3. Login process executes `~/.bash_profile`.
+4. `~/.bash_profile` executes `~/.bashrc`
+5. `~/.bashrc` executes `/etc/bashrc`
+
+The following command is used to indicate if the shell is a login shell or not.
+
+```bash
+echo  $0
+```
+
+Getting `-bash` or `-su` as the output indicates that the shell is a login shell. Take note of the `-` symbol preceding the output.
+
+In the image below, the output of the `echo $0` command has a `-` preceding the `bash`. It shows that the shell is a login shell.
+
+![login shell](https://www.delftstack.com/ezoimgfmt/d33wubrfki0l68.cloudfront.net/bd859d144c0037f4beb72a1cd4b91708f6a17029/e6945/img/linux/login_shell.png?ezimgfmt=rs:274x35/rscb5/ng:webp/ngcb5)
+
+[What is a Non-Login Shell in UNIX-Based Systems](https://www.delftstack.com/howto/linux/difference-between-a-login-shell-and-a-non-login-shell/#what-is-a-non-login-shell-in-unix-based-systems)
+
+The login shell starts a non-login shell. It can be a shell that starts with a process without login or starts from another shell. A process uses the name of the shell executable to start a non-login shell.
+
+Running the bash shell as a non-login shell executes the following scripts.
+
+1. Non-login process executes `~/.bashrc`
+2. `~/.bashrc` executes `/etc/bashrc`
+3. `/etc/bashrc` executes `/etc/profile.d/`
+
+To determine if a shell is a non-login shell or not, run the following command.
+
+```bash
+echo $0
+```
+
+If the output is `bash` or `su` without a preceding `-` symbol, the shell is a non-login shell.
+
+We execute the `echo $0` command in the image below, and the output shows a `-` preceding the `bash`. It means that we are using a login shell.
+
+To start a non-login shell, we type the name of the shell executable, `bash`, in our case. We execute the `echo $0` command again to see what type of shell the newly started shell is; the output of the `echo` command is `bash` without the `-`. It means the new shell is a non-login shell.
+
+![nonlogin shell](https://www.delftstack.com/ezoimgfmt/d33wubrfki0l68.cloudfront.net/91040ed8e4b1074ed69200b337b1b3f37fabe99f/2b1cc/img/linux/nonlogin_shell.png?ezimgfmt=rs:268x99/rscb5/ng:webp/ngcb5)
+
+
+
+
+
+
+
+
+
+## 2.Shell Scripting – Interactive and Non-Interactive Shell
+
+- Last Updated : 27 Jan, 2022
+
+A shell gives us an interface to the Unix system. While using an operating system, we indirectly interact with the shell. On Linux distribution systems, each time we use a terminal, we interact with the shell. The job of the shell is to interpret or analyze the Unix commands given by users. A shell accepts commands from the user and transforms them into a form that is understandable to the kernel. In other words, it acts as a mediator between ta user and the kernel unit of the operating system.
+
+Some of the features of a shell are listed below:
+
+- Wildcard substitution in file names (pattern-matching)
+- Command history
+- Filename substitution
+- Piping
+
+This article focuses upon the interactive and non-interactive shell.
+
+### Interactive shell:
+
+An interactive shell is defined as the shell that simply takes commands as input on tty from the user and acknowledges the output to the user. This shell also reads startup files that occurred during activation and displays a prompt. It also enables job control by default. It is also clear from the name, it is a shell with which we can interact. An interactive script is a script that requires input from the user. Interactive scripts couldn’t run in the background as they required input from the user. For an interactive shell, the prompt variable necessarily is set to ($PS1).
+
+For example, a bash shell is an interactive shell. 
+
+### How to start an interactive shell?
+
+We can start an interactive shell by giving the name of the shell after we logged into the system.
+
+For example,
+
+```
+bash
+```
+
+This will start bash shell.
+
+### Non-interactive shell:
+
+As the name implies, a non-interactive shell is a type of shell that doesn’t interact with the user. We can run it through a script or similar. Also, it can be run through some automated process. In this case  .bashrc and .profile files do not get executed. The non-interactive shell influences the PATH variable. It is highly recommended to use the full path for a command in non-interactive shells. Non-interactive scripts can smoothly run in the background easily. This shell is generally a non-login shell because the calling user has logged in already. A shell that runs a script is always considered a non-interactive shell.
+
+Scripts like Init and startup are considered non-interactive since they must run without human intervention.
+
+### How to check which type of shell is being used?
+
+The type of shell being used can be detected (BASH only). We can determine if we are using an interactive or non-interactive shell by,
+
+> [[ $- == *i* ]] && echo ‘Interactive’ || echo ‘not-interactive’
 

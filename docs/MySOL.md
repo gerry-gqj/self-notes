@@ -769,3 +769,57 @@ i++和++i，自行体会。
 表中插入创建的log日志，如果在不使用触发器的情况下，你需要编写程序语言逻辑才能实现，但
 是如果你定义了一个触发器，触发器的作用就是当你在用户表中插入一条数据的之后帮你在日志表
 中插入一条日志信息。当然触发器并不是只能进行插入操作，还能执行修改，删除。
+
+
+
+
+
+## 远程访问
+
+Tried
+
+```sql
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'root' WITH GRANT OPTION;
+```
+
+Getting
+
+> ERROR 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IDENTIFIED BY 'root' WITH GRANT OPTION' at line 1.
+
+Note: The same is working when tried in previous versions.
+
+Also tried
+
+```sql
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+```
+
+
+
+Starting with MySQL 8 you no longer can (implicitly) create a user using the `GRANT` command. Use [CREATE USER](https://dev.mysql.com/doc/refman/8.0/en/create-user.html) instead, followed by the [GRANT](https://dev.mysql.com/doc/refman/8.0/en/grant.html) statement:
+
+```sql
+mysql> CREATE USER 'root'@'%' IDENTIFIED BY 'PASSWORD';
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+mysql> FLUSH PRIVILEGES;
+```
+
+
+
+```shell
+mysql> SELECT User, Password, Host FROM user;
+```
+
+If you would somehow run into the following error:
+
+> ERROR 1130 (HY000): Host ‘1.2.3.4’ is not allowed to connect to this MySQL server
+
+You need add/change the following two lines in `/etc/mysql/my.cnf` and restart mysql:
+
+```sql
+bind-address           = 0.0.0.0
+skip-networking
+```
+
+
+
