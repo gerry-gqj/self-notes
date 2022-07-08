@@ -1,10 +1,16 @@
-## 内部类、Lambda表达式、方法引用
+## 函数式接口
 
+字节码查看工具
 
+Bytecode viewer
 
-### 1、内部类
+### 1. 内部类
 
+内部类使用外部变量必须是final类型的
 
+在jdk8里面也可以不是final类型，但是使用的final变量不能在外部被修改，否者会引发错误
+
+实际上这是防止两边修改引发错误而作的一个措施
 
 
 ```java
@@ -74,7 +80,7 @@ class MyLambda01Impl1 implements MyLambda01{
 
 
 
-### 2、Lambda表达式和方法引用
+### 2. Lambda表达式和方法引用
 
 
 
@@ -727,7 +733,7 @@ Kabir: 18
 
 
 
-### Java 8 方法引用
+### 3. Java 8 方法引用
 
 Java 8 中新增加了 **方法引用** 这个概念。 但，什么是方法引用呢 ？
 
@@ -997,4 +1003,793 @@ ram
 shyam
 kabir
 ```
+
+
+
+#### 1.静态方法的方法引用
+
+```java
+public class Dog {
+
+    private String name = "哈皮";
+
+    public static void bark(Dog dog){
+        System.out.println(dog+"叫了...");
+    }
+
+    @Override
+    public String toString(){
+        return this.name;
+    }
+
+}
+```
+
+```java
+//测试类
+    @Test
+    public void testStaticMethod(){
+        //方法引用
+        Consumer<Dog> consumer = System.out::println;
+        consumer.accept(new Dog());
+
+        //静态方法的方法引用
+        Consumer<Dog> consumer1 = Dog::bark;
+        consumer1.accept(new Dog());
+
+    }
+```
+
+#### 2.非静态方法的方法引用
+
+```java
+public class Dog {
+
+    private String name = "哈皮";
+
+    private int food = 10;
+
+
+    public static void bark(Dog dog){
+        System.out.println(dog+"叫了...");
+    }
+
+
+    /**
+     * 冷知识: jdk默认把当前对象实例传入到成员方法的参数, 参数名为this, 位置是第一个
+     * public int eadFood(Dog this,int num)和 public int eadFood(int num) 实际上是同一个方法
+     * @param num 吃掉的狗粮
+     * @return 返回吃剩下的狗粮数
+     */
+    public int eadFood(int num){
+        System.out.print("一共"+food+"斤"+"\t"+"吃了"+num+"斤\t");
+        food -= num;
+        return this.food;
+    }
+
+    @Override
+    public String toString(){
+        return this.name;
+    }
+
+}
+```
+
+
+
+```java
+    /**
+     * 非静态方法的方法引用
+     * 第一种方法:传递一个实例对象给方法参数
+     */
+    @Test
+    public void testMemberMethod(){
+        Dog dog = new Dog();
+        //方式一
+        Function<Integer,Integer> function = dog::eadFood;
+        System.out.println("还剩"+function.apply(3)+"斤狗粮...");
+        //方式二
+        UnaryOperator<Integer> unaryOperator = dog::eadFood;
+        System.out.println("还剩"+unaryOperator.apply(6)+"斤狗粮...");
+        //方式三
+        IntUnaryOperator intUnaryOperator = dog::eadFood;
+        System.out.println("还剩"+intUnaryOperator.applyAsInt(1)+"斤狗粮...");
+    }
+
+
+    /**
+     * 非静态方法的方法引用
+     * 第二种方法:使用类名来使用方法引用
+     * 此方法本质上与前面的静态方法引用没有什么区别，本质上都是通过传递对象示例给方法参数进行方法引用
+     * 冷知识: jdk默认把当前对象实例传入到成员方法的参数, 参数名为this, 位置是第一个
+     * 所以 int eadFood(Dog this,int num)和 int eadFood(int num) 实际上是同一个方法
+     */
+    @Test
+    public void testMemberMethod02(){
+        BiFunction<Dog,Integer,Integer> biFunction = Dog::eadFood;
+        System.out.println("还剩下"+biFunction.apply(new Dog(), 3)+"斤...");
+    }
+
+```
+
+#### 3.构造函数的方法引用
+
+```java
+    /**
+     * 构造函数的方法引用
+     * 无参构造函数的方法引用
+     */
+    @Test
+    public void testConstruction01(){
+        //无参构造方法的方法应用
+        Supplier<Dog> supplier = Dog::new; //构造函数的方法名为new
+        System.out.println("创建了新对象"+supplier.get()+"...");
+    }
+```
+
+增加构造方法
+
+```java
+    public Dog() {
+    }
+
+    public Dog(String name) {
+        this.name = name;
+    }
+```
+
+```java
+    /**
+     * 构造函数的方法引用
+     * 有参构造函数的方法引用
+     */
+    @Test
+    public void testConstruction02(){
+        Function<String,Dog> function = Dog::new; //构造函数放回一个对象实例，只需要将构造函数的参数放到前面即可
+        System.out.println("创建了新对象:"+function.apply("新哈皮")+".");
+    }
+```
+
+
+
+
+
+
+
+
+
+### 4. 几个函数式接口
+
+![3a8a40ff5277fbf5d6e558e9a63ae71](Lambda表达式与函数式接口.assets/3a8a40ff5277fbf5d6e558e9a63ae71-1655434905169.jpg)
+
+
+
+
+
+
+
+### 5.类型推断
+
+
+
+```java
+package com.qibria.func.method_ref;
+
+@FunctionalInterface
+interface IMath{
+    int add(int x,int y);
+}
+
+@FunctionalInterface
+interface IMath2{
+    int sub(int x,int y);
+}
+
+/**
+ * 类型推断
+ */
+public class TypeDemo {
+
+    public static void main(String[] args) {
+
+        //变量类型定义
+        IMath lambda02 = (x, y) -> x+y;
+
+        //数组
+        IMath[] lambda03 = {((x, y) -> x+y)};
+
+        //对象强转
+        Object lambda04 = (IMath) (x,y)->x+y;
+
+        //返回类型
+        IMath createLambda =createLambda();
+
+
+        TypeDemo typeDemo = new TypeDemo();
+
+        //方法两义性，无法找到正确的返回类型
+        //typeDemo.test(((x, y) -> x+y));
+
+
+        typeDemo.test((IMath) ((x, y) -> x + y));
+
+        typeDemo.test((IMath2) ((x, y) -> x + y));
+
+
+    }
+
+
+    private void test(IMath iMath){
+    }
+
+    private void test(IMath2 iMath){
+    }
+
+    private static IMath createLambda(){
+        return (x,y)->x+y;
+    }
+
+}
+```
+
+
+
+### 6. 级联表达式与柯里化
+
+```java
+/**
+ * 级联表达式与柯里化
+ * 柯里化: 把多个参数的函数表达式转换成只有一个参数的函数表达式
+ * 柯里化目的: 函数标准化
+ */
+public class CurryDemoTest {
+
+    @Test
+    public void curryTest(){
+        Function<Integer , Function<Integer,Integer>> function = x-> y->x+y;
+        System.out.println(function.apply(3).apply(6));
+
+        Function<Integer,Function<Integer,Function<Integer,Integer>>> functionFunction = x->y->z->x+y+z;
+        System.out.println(functionFunction.apply(2).apply(3).apply(4));
+
+    }
+
+}
+```
+
+
+
+### 7. Stream流的处理
+
+
+
+#### 1. 流操作
+
+```java
+//流操作
+@Test
+public void streamDemo01(){
+   int sum = IntStream.of(num).sum();
+   System.out.println(sum);
+}
+```
+
+
+
+#### 2. 惰性求值
+
+惰性操就是没有终止操作的时候，前面的操作都不会被执行
+
+```java
+    /**
+     * 惰性操就是没有终止操作的时候，前面的操作都不会被执行
+     * map()返回的是流，属于中间操作
+     * sum()返回的是具体的数据类型，属于终止操作
+     */
+    @Test
+    public void streamDemo02(){
+        System.out.println(Arrays.toString(num));
+        int sum = IntStream.of(num).map(StreamDemoTest::DoubleNum).sum();
+        System.out.println("sum:"+sum);
+        IntStream.of(num).map(StreamDemoTest::DoubleNum);
+    }
+
+    public static int DoubleNum(int x){
+        System.out.println(x+"->"+"执行了乘以二.");
+        return 2*x;
+    }
+
+```
+
+```shell
+[3, 4, 1, 7, 10, 9, 6]
+3->执行了乘以二.
+4->执行了乘以二.
+1->执行了乘以二.
+7->执行了乘以二.
+10->执行了乘以二.
+9->执行了乘以二.
+6->执行了乘以二.
+sum:80
+```
+
+
+
+#### 3. 流创建
+
+![image-20220617153606025](Lambda表达式与函数式接口.assets/image-20220617153606025.png)
+
+
+
+```java
+    /**
+     * 创建各种形式的流
+     */
+    @Test
+    public void streamDemo03(){
+        ArrayList<String > list = new ArrayList<>();
+        list.add("aaa");
+        list.add("bbb");
+
+        //集合中创建
+        Stream<String> stream1 = list.stream();
+        //并行流
+        Stream<String> stringStream = list.parallelStream();
+
+
+        //数组中创建
+        IntStream stream = Arrays.stream(new int[]{111, 222});
+
+
+        //创建数字流
+        IntStream intStream = IntStream.of(1, 2, 3);
+
+        //使用Random创建无限流
+        IntStream ints = new Random().ints();
+        //使用limit限制流
+        IntStream limit = new Random().ints().limit(10);
+
+        //手动创建流
+        Random random = new Random();
+        Stream.generate(()->random.nextInt()).limit(10);
+    }
+```
+
+#### 4. 中间操作
+
+无状态操作:  当前操作不依赖于其他的操作关系
+
+有状态操作：当前操作有前后依赖操作关系 
+
+![image-20220617160844479](Lambda表达式与函数式接口.assets/image-20220617160844479.png)
+
+```java
+    /**
+     * 流的中间操作
+     */
+    @Test
+    public void streamDemo04(){
+
+        String string = new String("my name is oo3");
+        Stream.of(string.split(" ")).forEach(System.out::println);
+
+        //map对流进行处理，例如将字符串传递进去获取字符串的长度并返回 mapToInt(x->x.length())
+        //mapToInt其实是map的变种，明确返回的是Int类型的流
+        System.out.println("------------map---------------");
+        Stream.of(string.split(" ")).mapToInt(x->x.length()).forEach(System.out::println);
+
+        //添加filter
+        //过滤掉长度小于3的字符串
+        System.out.println("------------filter---------------");
+        Stream.of(string.split(" ")).filter(x->x.length()>=3).mapToInt(x->x.length()).forEach(System.out::println);
+
+        //flatmap A->B属性(是个集合)，最终得到的是A元素里面的所有B属性集合
+        //intStream/longStream 并不是Stream的子类，所以要装箱boxed()
+        System.out.println("------------flatmap---------------");
+        String s1 = new String("my name is 007");
+        Stream.of(s1.split(" ")).flatMap(s -> s.chars().boxed()).forEach(System.out::println);
+        Stream.of(s1.split(" ")).flatMap(s -> s.chars().boxed()).forEach(i-> System.out.println((char)i.intValue()));
+
+
+        //peek是中间操作 用于debug操作 和foreach不同的是foreach是终止操作
+        System.out.println("------------peek---------------");
+        Stream.of(s1.split(" ")).peek(System.out::println).forEach(System.out::println);
+
+
+        //limit 操作, 常用于无限流
+        System.out.println("------------limit---------------");
+        new Random().ints().filter(x->x>10&&x<100).limit(10).forEach(System.out::println);
+        
+    }
+```
+
+#### 5. 终止操作
+
+![image-20220617164814292](Lambda表达式与函数式接口.assets/image-20220617164814292.png)
+
+> 短路操作就是无需等待所有结果都计算完就返回想要的结果
+
+
+
+```java
+    /**
+     * 流的终止操作
+     */
+    @Test
+    public void streamDemo05(){
+        String str = "my name is 003";
+        //使用并行流
+        str.chars().parallel().forEach(i-> System.out.print((char) i+"\t"));
+        //output: i	a	s	n	 	e	m	y	 	m	0	 	3	0
+        System.out.println();
+        //使用forEachOrdered() 保证并行流的顺序
+        System.out.println("------------------forEachOrdered--------------------");
+        str.chars().parallel().forEachOrdered(i-> System.out.print((char) i+"\t"));
+        //output: m	y	 	n	a	m	e	 	i	s	 	0	0	3
+
+
+        System.out.println();
+        System.out.println("------------------collect--------------------");
+        //使用collect()将结果转换成集合
+        List<String> collect = Stream.of(str.split(" ")).collect(Collectors.toList());
+
+
+        System.out.println("------------reduce--------------------");
+        //使用reduce拼接字符串
+        Optional<String> reduce = Stream.of(str.split(" ")).reduce((s1, s2) -> s1 + "|" + s2);
+        String s = reduce.get();
+        String aa = reduce.orElse("aa");
+        System.out.println(aa);
+        System.out.println(s);
+        //带初始化值的reduce reduce("", (s1, s2) -> s1 + "|" + s2) 第一个参数传入初始化值，不用做额外判断，直接返回对象
+        String reduce1 = Stream.of(str.split(" ")).reduce("", (s1, s2) -> s1 + "|" + s2);
+
+        //计算字符串总长度
+        Integer reduce2 = Stream.of(str.split(" ")).map(a -> a.length()).reduce(0, (s1, s2) -> s1 + s2);
+        System.out.println(reduce2);
+
+
+        System.out.println("------------max--------------------");
+        Optional<String> max = Stream.of(str.split(" ")).max((s1, s2) -> s1.length()-s2.length());
+        System.out.println(max.get());
+
+        System.out.println("------------findFirst--------------------");
+        OptionalInt first = new Random().ints().filter(i->i>10&&i<100).findFirst();
+        int asInt = first.getAsInt();
+        System.out.println(asInt);
+
+    }
+```
+
+#### 6. 并行流
+
+```java
+    @Test
+    public void palletDemo01(){
+
+        //并行运行
+        long count = IntStream.range(1, 100)
+                .parallel().peek(PalletStreamDemoTest::debug)
+                .count();
+        System.out.println(count);
+    }
+
+
+    public static void debug(int i){
+        System.out.println("i:"+i);
+        try {
+            TimeUnit.MICROSECONDS.sleep(800);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+并行流和串行流同时使用
+
+```java
+    /**
+     * 同时调用并行和串行会以最后的调用为准parallel/sequential
+     */
+    @Test
+    public void palletDemo02(){
+        long count02 = IntStream.range(1, 100)
+                //parallel 并行流
+                .parallel().peek(PalletStreamDemoTest::debug)
+                //sequential 串行流
+                .sequential().peek(PalletStreamDemoTest::debug02)
+                .count();
+        System.out.println(count02);
+    }
+
+
+    public static void debug02(int i){
+        System.err.println("i:"+i);
+        try {
+            TimeUnit.MICROSECONDS.sleep(800);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+并行流默认使用发的线程池
+
+```java
+    /**
+     *  并行流使用的线程 ForkJoinPool.commonPool-worker
+     *  使用的线程数是当前cpu核心个数
+     */
+    @Test
+    public void palletDemo03(){
+
+        //修改并行线程数
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism","20");
+
+        long count02 = IntStream.range(1, 100)
+                .parallel().peek(PalletStreamDemoTest::debug03)
+                .count();
+        System.out.println(count02);
+    }
+
+    public static void debug03(int i){
+        System.err.println(Thread.currentThread().getName()+"->\t[debug]\t"+"i:"+i);
+        try {
+            TimeUnit.MICROSECONDS.sleep(800);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+```
+
+自定义线程池
+
+```java
+    /**
+     * 自定义线程池
+     */
+    @Test
+    public void palletDemo04(){
+        ForkJoinPool pool = new ForkJoinPool(20);
+        pool.submit(()->IntStream.range(1, 100)
+                .parallel().peek(PalletStreamDemoTest::debug03)
+                .count());
+        pool.shutdown();
+
+        synchronized (pool){
+            try {
+                pool.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public static void debug04(int i){
+        System.err.println(Thread.currentThread().getName()+"->\t[debug]\t"+"i:"+i);
+        try {
+            TimeUnit.MICROSECONDS.sleep(800);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+#### 7. 收集器
+
+```java
+class Student {
+    /**
+     * 姓名
+     */
+    private String name;
+
+    /**
+     * 年龄
+     */
+    private int age;
+
+    /**
+     * 性别
+     */
+    private Gender gender;
+
+    /**
+     * 班级
+     */
+    private Grade grade;
+
+    public Student(String name, int age, Gender gender, Grade grade) {
+        super();
+        this.name = name;
+        this.age = age;
+        this.gender = gender;
+        this.grade = grade;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Grade getGrade() {
+        return grade;
+    }
+
+    public void setGrade(Grade grade) {
+        this.grade = grade;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    @Override
+    public String toString() {
+        return "[name=" + name + ", age=" + age + ", gender=" + gender
+                + ", grade=" + grade + "]";
+    }
+
+}
+
+/**
+ * 性别
+ */
+enum Gender {
+    MALE, FEMALE
+}
+
+/**
+ * 班级
+ */
+enum Grade {
+    ONE, TWO, THREE, FOUR;
+}
+
+public class CollectDemo {
+
+    public static void main(String[] args) {
+        // 测试数据
+        List<Student> students = Arrays.asList(
+                new Student("小明", 10, Gender.MALE, Grade.ONE),
+                new Student("大明", 9, Gender.MALE, Grade.THREE),
+                new Student("小白", 8, Gender.FEMALE, Grade.TWO),
+                new Student("小黑", 13, Gender.FEMALE, Grade.FOUR),
+                new Student("小红", 7, Gender.FEMALE, Grade.THREE),
+                new Student("小黄", 13, Gender.MALE, Grade.ONE),
+                new Student("小青", 13, Gender.FEMALE, Grade.THREE),
+                new Student("小紫", 9, Gender.FEMALE, Grade.TWO),
+                new Student("小王", 6, Gender.MALE, Grade.ONE),
+                new Student("小李", 6, Gender.MALE, Grade.ONE),
+                new Student("小马", 14, Gender.FEMALE, Grade.FOUR),
+                new Student("小刘", 13, Gender.MALE, Grade.FOUR));
+
+        // 得到所有学生的年龄列表
+        // s -> s.getAge() --> Student::getAge , 不会多生成一个类似 lambda$0这样的函数
+        Set<Integer> ages = students.stream().map(Student::getAge)
+                .collect(Collectors.toCollection(TreeSet::new));
+        System.out.println("所有学生的年龄:" + ages);
+
+
+        // 统计汇总信息
+//        IntSummaryStatistics agesSummaryStatistics = students.stream()
+//                .collect(Collectors.summarizingInt(Student::getAge));
+//        System.out.println("年龄汇总信息:" + agesSummaryStatistics);
+
+        IntSummaryStatistics intSummaryStatistics = students.stream().collect(Collectors.summarizingInt(students01 -> students01.getAge()));
+        System.out.println(intSummaryStatistics);
+
+        // 分块
+        Map<Boolean, List<Student>> genders = students.stream().collect(
+                Collectors.partitioningBy(s -> s.getGender() == Gender.MALE));
+        System.out.println("男女学生列表:" + genders);
+
+
+        // 分组
+        Map<Grade, List<Student>> grades = students.stream()
+                .collect(Collectors.groupingBy(Student::getGrade));
+        System.out.println("grades:"+grades);
+
+        // 得到所有班级学生的个数
+        Map<Grade, Long> gradesCount = students.stream()
+                .collect(Collectors.groupingBy(Student::getGrade, Collectors.counting()));
+        System.out.println(gradesCount);
+
+    }
+
+}
+```
+
+#### 8. Stream运行机制
+
+```java
+package com.qibria.func.method_ref;
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+/**
+ * 验证stream运行机制
+ *
+ * 1. 所有操作是链式调用, 一个元素只迭代一次
+ * 2. 每一个中间操作返回一个新的流. 流里面有一个属性sourceStage
+ *     指向同一个 地方,就是Head
+ * 3. Head->nextStage->nextStage->... -> null
+ * 4. 有状态操作会把无状态操作阶段,单独处理
+ * 5. 并行环境下, 有状态的中间操作不一定能并行操作.
+ *
+ * 6. parallel/ sequetial 这2个操作也是中间操作(也是返回stream)
+ * 		但是他们不创建流, 他们只修改 Head的并行标志
+ *
+ * @author 晓风轻
+ *
+ */
+public class RunStream {
+
+    public static void main(String[] args) {
+        Random random = new Random();
+        // 随机产生数据
+        Stream<Integer> stream = Stream.generate(() -> random.nextInt())
+                // 产生500个 ( 无限流需要短路操作. )
+                .limit(500)
+                // 第1个无状态操作
+                .peek(s -> print("peek: " + s))
+                // 第2个无状态操作
+                .filter(s -> {
+                    print("filter: " + s);
+                    return s > 1000000;
+                })
+                // 有状态操作
+                .sorted((i1, i2) -> {
+                    print("排序: " + i1 + ", " + i2);
+                    return i1.compareTo(i2);
+                })
+                // 又一个无状态操作
+                .peek(s -> {
+                    print("peek2: " + s);
+                }).parallel();
+
+        // 终止操作
+        stream.count();
+    }
+
+    /**
+     * 打印日志并sleep 5 毫秒
+     *
+     * @param s
+     */
+    public static void print(String s) {
+        // System.out.println(s);
+        // 带线程名(测试并行情况)
+        System.out.println(Thread.currentThread().getName() + " > " + s);
+        try {
+            TimeUnit.MILLISECONDS.sleep(5);
+        } catch (InterruptedException e) {
+        }
+    }
+
+}
+```
+
+
 
