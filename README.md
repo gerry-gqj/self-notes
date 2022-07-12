@@ -1,4 +1,4 @@
-* [内部类、Lambda表达式与方法引用](docs/Lambda.md)
+* [内部类、Lambda表达式与方法引用](docs/Lambda表达式与函数式接口.md)
 * [Java异常机制](docs/Exception.md)
 * [Java泛型机制](docs/Generic.md)
 * [Java注解和反射机制](docs/Annotation.md)
