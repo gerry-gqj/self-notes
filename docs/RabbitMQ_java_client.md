@@ -818,3 +818,84 @@ Binding bindingDirect() {
     }
 ```
 
+
+
+
+
+# RabbitMQ：@RabbitListener 与 @RabbitHandler 及 消息序列化
+
+
+
+- 添加 @RabbitListener 注解来指定某方法作为消息消费的方法，例如监听某 Queue 里面的消息
+
+## MessageConvert
+
+- 涉及网络传输的应用序列化不可避免，发送端以某种规则将消息转成 byte 数组进行发送，接收端则以约定的规则进行 byte[] 数组的解析
+- RabbitMQ 的序列化是指 Message 的 body 属性，即我们真正需要传输的内容，**RabbitMQ 抽象出一个 MessageConvert 接口处理消息的序列化**，其实现有 SimpleMessageConverter（默认）、Jackson2JsonMessageConverter 等
+- 当调用了 convertAndSend 方法时会使用 MessageConvert 进行消息的序列化
+- **SimpleMessageConverter 对于要发送的消息体 body 为 byte[] 时不进行处理，如果是 String 则转成字节数组,如果是 Java 对象，则使用 jdk 序列化将消息转成字节数组，转出来的结果较大，含class类名，类相应方法等信息。因此性能较差**
+- 当使用 RabbitMQ 作为中间件时，数据量比较大，此时就要考虑使用类似 Jackson2JsonMessageConverter 等序列化形式以此提高性能
+
+## @RabbitListener 用法
+
+- 使用 @RabbitListener 注解标记方法，当监听到队列 debug 中有消息时则会进行接收并处理
+
+
+
+```csharp
+@RabbitListener(queues = "debug")
+public void processMessage1(Message bytes) {
+    System.out.println(new String(bytes));
+}
+```
+
+### 注意
+
+- 消息处理方法参数是由 MessageConverter 转化，若使用自定义 MessageConverter 则需要在 RabbitListenerContainerFactory 实例中去设置（默认 Spring 使用的实现是 SimpleRabbitListenerContainerFactory）
+- 消息的 content_type 属性表示消息 body 数据以什么数据格式存储，接收消息除了使用 Message 对象接收消息（包含消息属性等信息）之外，还可直接使用对应类型接收消息 body 内容，但若方法参数类型不正确会抛异常：
+  - **application/octet-stream**：二进制字节数组存储，使用 byte[]
+  - **application/x-java-serialized-object**：java 对象序列化格式存储，使用 Object、相应类型（反序列化时类型应该同包同名，否者会抛出找不到类异常）
+  - **text/plain**：文本数据类型存储，使用 String
+  - **application/json**：JSON 格式，使用 Object、相应类型
+
+
+
+### 通过 @RabbitListener 注解声明 Binding
+
+- 通过 @RabbitListener 的 bindings 属性声明 Binding（若 RabbitMQ 中不存在该绑定所需要的 Queue、Exchange、RouteKey 则自动创建，若存在则抛出异常）
+
+```csharp
+@RabbitListener(bindings = @QueueBinding(
+        exchange = @Exchange(value = "topic.exchange",durable = "true",type = "topic"),
+        value = @Queue(value = "consumer_queue",durable = "true"),
+        key = "key.#"
+))
+public void processMessage1(Message message) {
+    System.out.println(message);
+}
+```
+
+
+
+## @RabbitListener 和 @RabbitHandler 搭配使用
+
+- @RabbitListener 可以标注在类上面，需配合 @RabbitHandler 注解一起使用
+- @RabbitListener 标注在类上面表示当有收到消息的时候，就交给 @RabbitHandler 的方法处理，具体使用哪个方法处理，根据 MessageConverter 转换后的参数类型
+
+```java
+@Component
+@RabbitListener(queues = "consumer_queue")
+public class Receiver {
+
+    @RabbitHandler
+    public void processMessage1(String message) {
+        System.out.println(message);
+    }
+
+    @RabbitHandler
+    public void processMessage2(byte[] message) {
+        System.out.println(new String(message));
+    }
+    
+}
+```
