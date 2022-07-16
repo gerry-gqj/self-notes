@@ -15,7 +15,7 @@ Spring框架运用了非常多的设计模式，从整体上看，它的设计�
 
 InitializingBean接口中提供了方法afterPropertiesSet()，DisposableBean接口中提供了方法destroy()。这两个接口功能类似，InitializingBean接口的afterPropertiesSet()方法用于Bean属性设置完毕（在invokeInitMethods方法中调用），做一些初始化操作。DisposableBean接口的destroy()方法用于Bean生命周期结束前（DefaultSingletonBeanRegistry的destroyBean方法调中调用）做一些收尾工作。
 
-```java
+``` java
 public interface InitializingBean {
 	void afterPropertiesSet() throws Exception;
 }
@@ -26,7 +26,7 @@ public interface DisposableBean {
 
 下面我们来看一个示例：
 
-```java
+``` java
 public class TestBean implements InitializingBean, DisposableBean {
 
     private String testName;
@@ -56,7 +56,7 @@ public class TestBean implements InitializingBean, DisposableBean {
 }
 ```
 
-```xml
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -68,7 +68,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 </beans>
 ```
 
-```java
+``` java
 public class SpringExtendsTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-extends.xml");
@@ -109,7 +109,7 @@ Call TestBean.destroyMethod(), destroy-method
 
 下面来看个例子：
 
-```java
+``` java
 public class AwareBean implements InitializingBean, BeanNameAware, BeanFactoryAware, ApplicationContextAware {
 
     private String beanName;
@@ -140,7 +140,7 @@ public class AwareBean implements InitializingBean, BeanNameAware, BeanFactoryAw
 }
 ```
 
-```xml
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -150,7 +150,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 </beans>
 ```
 
-```java
+``` java
 public class AwareBeanTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-aware.xml");
@@ -179,13 +179,13 @@ Call AwareBean.afterPropertiesSet(), InitializingBean
 
 传统的Spring容器加载一个Bean的整个过程，都是由Spring控制的，开发者除了设置Bean相关属性之外，是没有太多的自主权的。FactoryBean改变了这一点，开发者可以个性化地定制自己想要实例化出来的Bean，方法就是实现FactoryBean接口。下面来看个例子：
 
-```java
+``` java
 public interface Car {
     public void driving();
 }
 ```
 
-```java
+``` java
 public class Bmw implements Car {
     @Override
     public void driving() {
@@ -194,7 +194,7 @@ public class Bmw implements Car {
 }
 ```
 
-```java
+``` java
 public class Benz implements Car {
     @Override
     public void driving() {
@@ -203,7 +203,7 @@ public class Benz implements Car {
 }
 ```
 
-```java
+``` java
 public class CarFactoryBean implements FactoryBean<Car> {
 
     private String carName;
@@ -247,7 +247,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 </beans>
 ```
 
-```java
+``` java
 public class FactoryBeanTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-factory-bean.xml");
@@ -286,7 +286,7 @@ Benz driving
 
 下面看个简单的示例：
 
-```java
+``` java
 public class TestBean implements InitializingBean, DisposableBean {
     private String testName;
 
@@ -314,7 +314,7 @@ public class TestBean implements InitializingBean, DisposableBean {
 }
 ```
 
-```java
+``` java
 public class MyBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -346,7 +346,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 </beans>
 ```
 
-```java
+``` java
 public class BeanPostProcessorTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-bean-post-processor.xml");
@@ -388,7 +388,7 @@ Spring允许在Bean创建之前，读取Bean的元属性，并根据自己的需
 
 新增一个类MyBeanFactoryPostProcessor，实现BeanFactoryPostProcessor接口。
 
-```java
+``` java
 public class MyBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
@@ -399,7 +399,7 @@ public class MyBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
 
 新增一个类MyBeanPostProcessor，实现BeanPostProcessor接口。
 
-```java
+``` java
 public class MyBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -417,7 +417,7 @@ public class MyBeanPostProcessor implements BeanPostProcessor {
 
 新增一个测试Bean TestBean
 
-```java
+``` java
 public class TestBean implements BeanNameAware, InitializingBean, DisposableBean {
     private String testName;
 
@@ -469,7 +469,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 </beans>
 ```
 
-```java
+``` java
 public class BeanFactoryPostProcessorTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-bean-factory-post-processor.xml");
@@ -509,7 +509,7 @@ Call TestBean.destroyMethod(), destroy-method
 
 同时我们注意到postProcessBeanFactory方法的参数类型是ConfigurableListableBeanFactory，这就是为什么可以使用BeanFactoryPostProcessor来改变Bean的属性相对应起来了。ConfigurableListableBeanFactory功能非常丰富，它携带了每个Bean的基本信息。比如我们可以获取如下信息：
 
-```java
+``` java
 public class MyBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
@@ -533,7 +533,7 @@ public class MyBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
 
 下面看个简单的示例，来认识一下InstantiationAwareBeanPostProcessor。
 
-```java
+``` java
 public class TestBean implements BeanNameAware, InitializingBean, DisposableBean {
     private String testName;
 
@@ -570,7 +570,7 @@ public class TestBean implements BeanNameAware, InitializingBean, DisposableBean
 }
 ```
 
-```java
+``` java
 public class MyBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -586,7 +586,7 @@ public class MyBeanPostProcessor implements BeanPostProcessor {
 }
 ```
 
-```java
+``` java
 public class MyInstantiationAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
     public Object postProcessBeforeInstantiation(Class<?> bean, String beanName) throws BeansException {
         System.out.println("Call MyInstantiationAwareBeanPostProcessor.postProcessBeforeInstantiation(), InstantiationAwareBeanPostProcessor");
@@ -610,7 +610,7 @@ public class MyInstantiationAwareBeanPostProcessor implements InstantiationAware
 }
 ```
 
-```xml
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -624,7 +624,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 </beans>
 ```
 
-```java
+``` java
 public class InstantiationAwareBeanPostProcessorTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-instantiation-aware-bean-post-processor.xml");

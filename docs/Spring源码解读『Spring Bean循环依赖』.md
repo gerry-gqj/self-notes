@@ -8,7 +8,7 @@
 
 首先定义两个Bean，BeanA和BeanB，两个Bean分别由一个对方类型的成员变量，如下：
 
-```
+``` java
 public class BeanA {
     private BeanB beanB;
 
@@ -35,7 +35,7 @@ public class BeanB {
 
 spring xml配置文件，配置属性依赖：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -56,7 +56,7 @@ spring xml配置文件，配置属性依赖：
 
 测试代码：
 
-```
+``` java
 public class CircularDependenceTest {
     public static void main(String[] args) {
         AbstractApplicationContext abstractApplicationContext = new ClassPathXmlApplicationContext("classpath:spring-circular-dependence.xml");
@@ -83,7 +83,7 @@ true
 
 简单来讲，Spring解决循依赖，其实是通过提早缓存未实例结束的bean来实现的。首先在doGetBean()方法中，该方法获取bean，首先会尝试从缓存中获取，如下：
 
-```
+``` java
 protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
 		@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
 
@@ -149,7 +149,7 @@ protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 
 上面最重要的就是singletonFactories何时放入了可以通过getObject获得bean对象的ObjectFactory。考虑到循环依赖的场景，应该会是bean对象实例化后，而属性注入之前。仔细寻找后发现，在AbstractAutowireCapableBeanFactory类的doCreateBean方法，执行完createBeanInstance实例化bean之后，populateBean属性注入之前，有这样一段代码：
 
-```
+``` java
 // Eagerly cache singletons to be able to resolve circular references
 // even when triggered by lifecycle interfaces like BeanFactoryAware.
 boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
@@ -177,7 +177,7 @@ protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFa
 
 再来看下getObject方法中的getEarlyBeanReference方法。这里也设置了一个InstantiationAwareBeanPostProcessor后置处理器的扩展点，允许在对象返回之前修改甚至替换bean。
 
-```
+``` java
 protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 	Object exposedObject = bean;
 	if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
@@ -206,7 +206,7 @@ protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, 
 
 上面我们了解了单例的bean循环引用的处理过程，那么多例的呢？其实我们可以按上面的思路来思考一下，单例bean的循环引用是因为每个对象都是固定的，只是提前暴露对象的引用，最终这个引用对应的对象是创建完成的。但是多例的情况下，每次getBean都会创建一个新的对象，那么应该引用哪一个对象呢，这本身就已经是矛盾的了。因而spring中对于多例之间相互引用是会提示错误的。在doGetBean protoType处理的逻辑中，第一步就存在下面的判断：
 
-```
+``` java
 // Fail if we're already creating this bean instance:
 // We're assumably within a circular reference.
 if (isPrototypeCurrentlyInCreation(beanName)) {
@@ -216,6 +216,6 @@ if (isPrototypeCurrentlyInCreation(beanName)) {
 
 > 参考链接：
 >
-> \1. Spring源码
+> 1. Spring源码
 >
-> \2. [bean的循环依赖](https://my.oschina.net/u/2377110/blog/979226)
+> 2. [bean的循环依赖](https://my.oschina.net/u/2377110/blog/979226)

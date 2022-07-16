@@ -4,7 +4,7 @@
 
 上篇文章我们介绍了通过xml配置文件来解析Bean配置的过程，本篇文章我们来看另一种解析Bean配置的方式，@Configuration配置类。在Spring应用中，为了使用@Configuration配置类，如果使用xml启动ApplicationContext，我们一般会在xml配置文件中加上如下一行配置：
 
-```
+``` xml
 <context:component-scan base-package="com.zhuoli.service.spring.explore.config"/>
 ```
 
@@ -12,7 +12,7 @@
 
 ## 1. @Configuration使用示例
 
-```
+``` java
 package com.zhuoli.service.spring.explore.config;
 
 public class TestBeanA {
@@ -81,7 +81,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd http://www.spri
 
 这里分别通过配置类和xml配置文件配置了TestBeanA、TestBeanB的bean，下面通过xml启动Spring：
 
-```
+``` java
 public class SpringConfigTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring-config.xml");
@@ -121,7 +121,7 @@ configTestBeanB
 
 该类是BeanDefinitionRegistryPostProcessor/BeanFactoryPostProcessor，我们之前介绍过，在Spring Context加载一个核心方法
 
-```
+``` java
 org.springframework.context.support.AbstractApplicationContext#refresh
 ```
 
@@ -129,7 +129,7 @@ org.springframework.context.support.AbstractApplicationContext#refresh
 
 #### 2.1.1 postProcessBeanDefinitionRegistry
 
-```
+``` java
 public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 	int registryId = System.identityHashCode(registry);
 	if (this.registriesPostProcessed.contains(registryId)) {
@@ -148,7 +148,7 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 
 核心代码是最后的调用的processConfigBeanDefinitions方法，继续跟进。
 
-```
+``` java
 /**
  * Build and validate a configuration model based on the registry of
  * {@link Configuration} classes.
@@ -271,7 +271,7 @@ public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 
 #### 2.1.2 postProcessBeanFactory
 
-```
+``` java
 /**
  * Prepare the Configuration classes for servicing bean requests at runtime
  * by replacing them with CGLIB-enhanced subclasses.
@@ -303,7 +303,7 @@ public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) 
 
 通过观察发现，我们在xml配置文件中添加了这么一行配置：
 
-```
+``` xml
 <context:component-scan base-package="com.zhuoli.service.spring.explore.config"/>
 ```
 
@@ -321,7 +321,7 @@ public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) 
 
 #### 2.2.1 org.springframework.context.annotation.ConfigurationClassParser#parse(java.util.Set)
 
-```
+``` java
 /**
  * configCandidates : 外部指定需要被分析的一组候选配置类BeanDefinitionHolder
  * 这些配置类BeanDefinitionHolder是在ComponentScanBeanDefinitionParser中得到的
@@ -357,7 +357,7 @@ public void parse(Set<BeanDefinitionHolder> configCandidates) {
 
 #### 2.2.2 org.springframework.context.annotation.ConfigurationClassParser#processConfigurationClass
 
-```
+``` java
 protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) throws IOException {
 	if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
 		return;
@@ -397,7 +397,7 @@ protected void processConfigurationClass(ConfigurationClass configClass, Predica
 
 #### 2.2.3 doProcessConfigurationClass
 
-```
+``` java
 /**
  * @return annotation metadata of superclass, {@code null} if none found or previously processed
  */
@@ -497,7 +497,7 @@ protected AnnotationMetadata doProcessConfigurationClass(ConfigurationClass conf
 
 #### 2.3.1 loadBeanDefinitions
 
-```
+``` java
 public void loadBeanDefinitions(Set<ConfigurationClass> configurationModel) {
 	TrackedConditionEvaluator trackedConditionEvaluator = new TrackedConditionEvaluator();
 	// 遍历配置类，解析并注册bean
@@ -508,8 +508,8 @@ public void loadBeanDefinitions(Set<ConfigurationClass> configurationModel) {
 ```
 
 #### 2.3.2 loadBeanDefinitionsForConfigurationClass
-
-```
+ 
+``` java
 /**
 * 从指定的一个配置类ConfigurationClass中提取bean定义信息并注册bean定义到bean容器 :
 * 1. 配置类本身要注册为bean定义
@@ -547,7 +547,7 @@ private void loadBeanDefinitionsForConfigurationClass(
 
 #### 2.3.3 loadBeanDefinitionsForBeanMethod
 
-```
+``` java
 /**
 * 解析配置类中@Bean注解的配置类方法作为bean定义，并注册到bean容器
 */
@@ -650,7 +650,7 @@ private void loadBeanDefinitionsForBeanMethod(BeanMethod beanMethod) {
 
 #### 2.3.4 loadBeanDefinitionsFromImportedResources
 
-```
+``` java
 /**
 * 从xml或者groovy bean定义文件解析并注册bean
 */
@@ -700,7 +700,7 @@ private void loadBeanDefinitionsFromImportedResources(
 
 #### 2.3.5 loadBeanDefinitionsFromRegistrars
 
-```
+``` java
 /**
 * 对配置类中所有通过@Import导入的ImportBeanDefinitionRegistrar类，遍历调用registerBeanDefinitions方法注册bean
 */
@@ -714,8 +714,8 @@ private void loadBeanDefinitionsFromRegistrars(Map<ImportBeanDefinitionRegistrar
 
 > 参考链接：
 >
-> \1. [Spring BeanDefinitionRegistryPostProcessor : ConfigurationClassPostProcessor](https://blog.csdn.net/andy_zhang2007/article/details/78579464)
+> 1. [Spring BeanDefinitionRegistryPostProcessor : ConfigurationClassPostProcessor](https://blog.csdn.net/andy_zhang2007/article/details/78579464)
 >
-> \2. [Spring 工具类 ConfigurationClassParser 分析得到配置类](https://blog.csdn.net/andy_zhang2007/article/details/78549773)
+> 2. [Spring 工具类 ConfigurationClassParser 分析得到配置类](https://blog.csdn.net/andy_zhang2007/article/details/78549773)
 >
-> \3. [Spring 工具 ConfigurationClassBeanDefinitionReader 注册配置类中的bean定义](https://blog.csdn.net/andy_zhang2007/article/details/78652929)
+> 3. [Spring 工具 ConfigurationClassBeanDefinitionReader 注册配置类中的bean定义](https://blog.csdn.net/andy_zhang2007/article/details/78652929)

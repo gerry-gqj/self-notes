@@ -4,7 +4,7 @@
 
 之前的文章详细介绍了Bean的实例化和初始化的过程，但其实Bean能实例化、初始化的前提是Spring容器在启动时，间配置文件（配置类）中的配置加载成BeanDefinition，这一点我们再之前的文章[Spring源码解读『IOC容器1-自定义实现IOC容器』](http://lidol.top/frame/2513/)一文中看得比较清楚。关于Spring对配置文件（配置类）的处理，我们还没有介绍，本篇文章我们就来介绍一下Spring容器启动时是如何加载xml配置文件并加载成BeanDefinition的，在下篇文章来介绍@Configuration配置类。首先来看一下我们之前定义的spring xml配置文件：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -32,7 +32,7 @@ BeanDefinition是一个接口，Bean实例化所需要的信息都是定义在Be
 
 通过BeanDefinition，就可以实例化Bean对象。而Spring容器解析得到的BeanDefinition都会注册到Spring容器中，这里的“容器”其实就是DefaultListableBeanFactory，该类有两个相关的成员变量。
 
-```
+``` java
 /** Map of bean definition objects, keyed by bean name */
 private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
 
@@ -48,7 +48,7 @@ private volatile List<String> beanDefinitionNames = new ArrayList<>(256);
 
 之前的文章，我们介绍到，通过xml启动Spring容器的入口在ClassPathXmlApplicationContext类的构造方法，而该方法的核心就是调用org.springframework.context.support.AbstractApplicationContext#refresh。配置文件读取、Bean的实例化、初始化都是在refresh方法中完成的。由于之前已经介绍过Bean实例化、初始化流程，关于这部分内容，下面的源码解读部分都会被省略。
 
-```
+``` java
 @Override
 public void refresh() throws BeansException, IllegalStateException {
 	synchronized (this.startupShutdownMonitor) {
@@ -67,7 +67,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 ### 2.2 obtainFreshBeanFactory()
 
-```
+``` java
 protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
 	refreshBeanFactory();
 	ConfigurableListableBeanFactory beanFactory = getBeanFactory();
@@ -84,7 +84,7 @@ getBeanFactory()方法其实就是类的getter方法，获取类的beanFactory�
 
 refreshBeanFactory()最终调用的是AbstractRefreshableApplicationContext类的refreshBeanFactory方法。
 
-```
+``` java
 protected final void refreshBeanFactory() throws BeansException {
 	if (hasBeanFactory()) {
 		destroyBeans();
@@ -115,7 +115,7 @@ loadBeanDefinitions方法则完成了BeanDefinition的加载和注册。
 
 loadBeanDefinitions方法，是AbstractRefreshableApplicationContext子类AbstractXmlApplicationContext中的一个方法：
 
-```
+``` java
 protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 	// 1. 通过BeanFactory构建XmlBeanDefinitionReader
 	XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
@@ -139,7 +139,7 @@ protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throw
 
 ### 2.5 AbstractBeanDefinitionReader#loadBeanDefinitions
 
-```
+``` java
 public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources) throws BeanDefinitionStoreException {
 	ResourceLoader resourceLoader = getResourceLoader();
 	if (resourceLoader == null) {
@@ -184,7 +184,7 @@ public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualRe
 
 该方法的第一个参数其实就是通过ClassPathXmlApplicationContext构造函数指定的配置文件位置，第二个参数这里是空。另外ResourceLoader是在org.springframework.context.support.AbstractXmlApplicationContext#loadBeanDefinitions(org.springframework.beans.factory.support.DefaultListableBeanFactory)方法中通过调用setResourceLoader方法指定的，传入的参数是ClassPathXmlApplicationContext，该类是ResourcePatternResolver的实现类，所以上述方法会进如下的判断分支
 
-```
+``` java
 if (resourceLoader instanceof ResourcePatternResolver)
 ```
 
@@ -192,7 +192,7 @@ if (resourceLoader instanceof ResourcePatternResolver)
 
 ### 2.6 XmlBeanDefinitionReader#loadBeanDefinitions(org.springframework.core.io.support.EncodedResource)
 
-```
+``` java
 public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
 	Assert.notNull(encodedResource, "EncodedResource must not be null");
 	if (logger.isInfoEnabled()) {
@@ -238,7 +238,7 @@ public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefin
 
 ### 2.7 BeanDefinitionReader#doLoadBeanDefinitions
 
-```
+``` java
 protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 		throws BeanDefinitionStoreException {
 	try {
@@ -275,7 +275,7 @@ protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 
 ### 2.8 XmlBeanDefinitionReader#registerBeanDefinitions
 
-```
+``` java
 public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
 	// 1. 获取documentReader，用于读取通过xml获得的Document
 	BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
@@ -290,7 +290,7 @@ public int registerBeanDefinitions(Document doc, Resource resource) throws BeanD
 
 ### 2.9 DefaultBeanDefinitionDocumentReader#registerBeanDefinitions
 
-```
+``` java
 public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
 	this.readerContext = readerContext;
 	logger.debug("Loading bean definitions");
@@ -301,7 +301,7 @@ public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext
 
 ### 2.10 DefaultBeanDefinitionDocumentReader#doRegisterBeanDefinitions
 
-```
+``` java
 protected void doRegisterBeanDefinitions(Element root) {
 	// Any nested <beans> elements will cause recursion in this method. In
 	// order to propagate and preserve <beans> default-* attributes correctly,
@@ -347,7 +347,7 @@ protected void doRegisterBeanDefinitions(Element root) {
 
 ### 2.11 DefaultBeanDefinitionDocumentReader#parseBeanDefinitions
 
-```
+``` java
 /**
  * Parse the elements at the root level in the document:
  * "import", "alias", "bean".
@@ -379,7 +379,7 @@ protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate d
 
 ### 2.12 DefaultBeanDefinitionDocumentReader#parseDefaultElement
 
-```
+``` java
 private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
 	if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
 		// 解析<import>
@@ -404,7 +404,7 @@ private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate deleg
 
 ### 2.13 DefaultBeanDefinitionDocumentReader#processBeanDefinition
 
-```
+``` java
 protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
 	// 1. 解析<Bean>标签为BeanDefinitionHolder
 	BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
@@ -429,7 +429,7 @@ protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate d
 
 ### 2.14 BeanDefinitionParserDelegate#parseBeanDefinitionElement
 
-```
+``` java
 public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
 	// 1. 获取<Bean>标签id属性value
 	String id = ele.getAttribute(ID_ATTRIBUTE);
@@ -562,7 +562,7 @@ public AbstractBeanDefinition parseBeanDefinitionElement(
 
 bean解析结束后，我们来看最后一步，Bean注册。该过程在上述方法中有调用：
 
-```
+``` java
 org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader#processBeanDefinition
 public static void registerBeanDefinition(
 		BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)
@@ -584,7 +584,7 @@ public static void registerBeanDefinition(
 
 注册BeanDefinition方法最终会调用到DefaultListableBeanFactory中的registerBeanDefinition方法，如下：
 
-```
+``` java
 public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 		throws BeanDefinitionStoreException {
 
@@ -669,8 +669,8 @@ public void registerBeanDefinition(String beanName, BeanDefinition beanDefinitio
 
 > 参考链接：
 >
-> \1. Spring源码
+> 1. Spring源码
 >
-> \2. [spring5 源码深度解析—– IOC 之 默认标签解析（下）](https://zhuanlan.zhihu.com/p/89023035)
+> 2. [spring5 源码深度解析—– IOC 之 默认标签解析（下）](https://zhuanlan.zhihu.com/p/89023035)
 >
-> \2. [配置文件读取流程](https://www.cnblogs.com/xrq730/p/6733403.html)
+> 2. [配置文件读取流程](https://www.cnblogs.com/xrq730/p/6733403.html)

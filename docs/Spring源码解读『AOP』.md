@@ -8,7 +8,7 @@
 
 ### 1.1 Bean interface
 
-```
+``` java
 package com.zhuoli.service.spring.explore.aop.bean;
 
 public interface AopBean {
@@ -20,7 +20,7 @@ public interface AopBean {
 
 ### 1.2 Bean interface实现
 
-```
+``` java
 package com.zhuoli.service.spring.explore.aop.impl;
 
 import com.zhuoli.service.spring.explore.aop.bean.AopBean;
@@ -40,7 +40,7 @@ public class AopBeanImpl implements AopBean {
 
 定义一个TimeHandler，用于方法调用前后打印时间。
 
-```
+``` java
 package com.zhuoli.service.spring.explore.aop.handler;
 
 public class TimeHandler {
@@ -52,7 +52,7 @@ public class TimeHandler {
 
 ### 1.4 spring xml配置文件
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -80,7 +80,7 @@ public class TimeHandler {
 
 ### 1.5 执行示例
 
-```
+``` java
 public class AopTest {
     public static void main(String[] args) {
         AbstractApplicationContext abstractApplicationContext = new ClassPathXmlApplicationContext("classpath:spring-aop.xml");
@@ -93,7 +93,7 @@ public class AopTest {
 
 运行结果：
 
-```
+``` shell
 CurrentTime:1593994886953
 call method1()
 CurrentTime:1593994886965
@@ -113,7 +113,7 @@ CurrentTime:1593994886965
 
 首先，我们来看一下上述Spring启动配置xml文件的解析。之前关于普通Bean的解析我们在介绍，这里我们重点来看一下AOP相关配置的BeanDefinition解析。
 
-```
+``` xml
 <aop:config proxy-target-class="true">
     <aop:aspect id="time" ref="timeHandler">
         <aop:pointcut id="addAllMethod" expression="execution(* com.zhuoli.service.spring.explore.aop.impl..*.*(..))"/>
@@ -143,7 +143,7 @@ CurrentTime:1593994886965
 
 切点其实就是连接点的集合，如果说通知定义了切面的“什么”和“何时”的话，那么切点就定义了“何处”。切点的定义一般可以通过正则表达式来定义，比如我们上面定义的：
 
-```
+``` xml
 <aop:pointcut id="addAllMethod" expression="execution(* com.zhuoli.service.spring.explore.aop.impl..*.*(..))"/>
 ```
 
@@ -176,7 +176,7 @@ CurrentTime:1593994886965
 
 之前介绍xml解析的文章，我们知道，上述切面定义的标签<aop:config/>、<aop:aspect />等标签肯定肯定也会通过DefaultBeanDefinitionDocumentReader解析，解析的方法是parseBeanDefinitions。
 
-```
+``` java
 protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
     if (delegate.isDefaultNamespace(root)) {
         NodeList nl = root.getChildNodes();
@@ -201,7 +201,7 @@ protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate d
 
 <bean id=”aopBean”…>、<bean id=”timeHandler”…>这两个标签的时候，都会执行parseDefaultElement，因为<bean>标签是默认的Namespace。但是在遇到后面的<aop:config>标签的时候就不一样了，<aop:config>并不是默认的Namespace，因此会执行parseCustomElement：
 
-```
+``` java
 public BeanDefinition parseCustomElement(Element ele) {
     return parseCustomElement(ele, null);
 }
@@ -232,7 +232,7 @@ public BeanDefinition parseCustomElement(Element ele, BeanDefinition containingB
 
 这里我们来看一下ConfigBeanDefinitionParser的parse方法如何将<aop:config>节点解析为BeanDefinition的。
 
-```
+``` java
 public BeanDefinition parse(Element element, ParserContext parserContext) {
     CompositeComponentDefinition compositeDef =
             new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
@@ -272,7 +272,7 @@ public BeanDefinition parse(Element element, ParserContext parserContext) {
 
 #### 2.2.3 <aop:aspect>标签解析
 
-```
+``` java
 private void parseAspect(Element aspectElement, ParserContext parserContext) {
     String aspectId = aspectElement.getAttribute(ID);
     String aspectName = aspectElement.getAttribute(REF);
@@ -332,7 +332,7 @@ private void parseAspect(Element aspectElement, ParserContext parserContext) {
 
 跟着第1步，来看一下节<aop:aspect>节点下定义的通知的解析过程。首先来看一下<aop:aspect>节点下定义的哪些子节点是通知节点，也就是isAdviceNode方法：
 
-```
+``` java
 /**
  * Return {@code true} if the supplied node describes an advice type. May be one of:
  * '{@code before}', '{@code after}', '{@code after-returning}',
@@ -352,7 +352,7 @@ private boolean isAdviceNode(Node aNode, ParserContext parserContext) {
 
 也就是说**<aop:aspect>标签下的<aop:before>、<aop:after>、<aop:after-returning>、<aop:after-throwing method=””>、<aop:around method=””>**这五个标签是通知节点，会在第1步被处理。然后进入parseAdvice解析。
 
-```
+``` java
 /**
  * Parses one of '{@code before}', '{@code after}', '{@code after-returning}',
  * '{@code after-throwing}' or '{@code around}' and registers the resulting
@@ -408,7 +408,7 @@ private AbstractBeanDefinition parseAdvice(
 
 接着我们来看第1步，advice对应的RootBeanDefinition是如何创建的，也就是createAdviceDefinition方法：
 
-```
+``` java
 private AbstractBeanDefinition createAdviceDefinition(
         Element adviceElement, ParserContext parserContext, String aspectName, int order,
         RootBeanDefinition methodDef, RootBeanDefinition aspectFactoryDef,
@@ -456,8 +456,8 @@ private AbstractBeanDefinition createAdviceDefinition(
 ```
 
 对于不同的advice，生成的BeanDefition的beanClass是不同的，是通过getAdviceClass方法实现的：
-
-```
+  
+``` java
 private Class<?> getAdviceClass(Element adviceElement, ParserContext parserContext) {
     String elementName = parserContext.getDelegate().getLocalName(adviceElement);
     if (BEFORE.equals(elementName)) {
@@ -493,7 +493,7 @@ private Class<?> getAdviceClass(Element adviceElement, ParserContext parserConte
 
 接着我们回到parseAdvice方法来看第2步，将第1步生成的RootBeanDefinition写入一个新的RootBeanDefinition，即advisor定义。
 
-```
+``` java
 RootBeanDefinition advisorDefinition = new RootBeanDefinition(AspectJPointcutAdvisor.class);
 advisorDefinition.setSource(parserContext.extractSource(adviceElement));
 advisorDefinition.getConstructorArgumentValues().addGenericArgumentValue(adviceDef);
@@ -507,7 +507,7 @@ if (aspectElement.hasAttribute(ORDER_PROPERTY)) {
 
 最后我们回到parseAdvice方法来看第3步，将生成的BeanDefinition注册到DefaultListableBeanFactory。
 
-```
+``` java
 parserContext.getReaderContext().registerWithGeneratedName(advisorDefinition);
 
 public String registerWithGeneratedName(BeanDefinition beanDefinition) {
@@ -525,7 +525,7 @@ public String registerWithGeneratedName(BeanDefinition beanDefinition) {
 
 回到ConfigBeanDefinitionParser的parseAspect方法的第2步，在完成<aop:aspect>节点下通知节点的解析后，会继续进行节点下定义的切点<aop:pointcut>的解析：
 
-```
+``` java
 List<Element> pointcuts = DomUtils.getChildElementsByTagName(aspectElement, POINTCUT);
 for (Element pointcutElement : pointcuts) {
     parsePointcut(pointcutElement, parserContext);
@@ -536,7 +536,7 @@ parserContext.popAndRegisterContainingComponent();
 
 遍历<aop:aspect>节点下定义的<aop:pointcut>节点，调用parsePointcut方法解析。
 
-```
+``` java
 private AbstractBeanDefinition parsePointcut(Element pointcutElement, ParserContext parserContext) {
     // 1, 获取<aop:pointcut>标签下的"id"属性与"expression"属性
     String id = pointcutElement.getAttribute(ID);
@@ -576,7 +576,7 @@ private AbstractBeanDefinition parsePointcut(Element pointcutElement, ParserCont
 
 最后我们看一下根据表达式创建BeanDefinition的方法createPointcutDefinition：
 
-```
+``` java
 protected AbstractBeanDefinition createPointcutDefinition(String expression) {
     RootBeanDefinition beanDefinition = new RootBeanDefinition(AspectJExpressionPointcut.class);
     beanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
@@ -609,7 +609,7 @@ protected AbstractBeanDefinition createPointcutDefinition(String expression) {
 
 Bean的初始化在AbstractAutowireCapableBeanFactory的initializeBean方法：
 
-```
+``` java
 protected Object initializeBean(final String beanName, final Object bean, RootBeanDefinition mbd) {
     if (System.getSecurityManager() != null) {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
@@ -675,7 +675,7 @@ BeanPostProcessor生效，就在上述applyBeanPostProcessorsBeforeInitializatio
 
 下面我们来看AspectJAwareAdvisorAutoProxyCreator如何通过postProcessAfterInitialization方法生成代理对象的。
 
-```
+``` java
 public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
     if (bean != null) {
         Object cacheKey = getCacheKey(bean.getClass(), beanName);
@@ -689,7 +689,7 @@ public Object postProcessAfterInitialization(Object bean, String beanName) throw
 
 所以肯定在wrapIfNecessary方法中，生成了代理对象。
 
-```
+``` java
 protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
     // 1. 不需要生成代理对象的，直接返回bean
     if (beanName != null && this.targetSourcedBeans.contains(beanName)) {
@@ -722,7 +722,7 @@ protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) 
 
 所以，配置文件里面配置了很多Bean，肯定不能对每个Bean都生成代理，因此哪些Bean需要生成代理对象，需要一套规则判断规则，这个规则就在getAdvicesAndAdvisorsForBean方法中，如果能找到Bean对应的Advisor，就需要生成代理，否则不需要生成代理。
 
-```
+``` java
 protected Object[] getAdvicesAndAdvisorsForBean(Class beanClass, String beanName, TargetSource targetSource) {
     List advisors = findEligibleAdvisors(beanClass, beanName);
     if (advisors.isEmpty()) {
@@ -747,7 +747,7 @@ protected List<Advisor> findEligibleAdvisors(Class beanClass, String beanName) {
 
 可以看到，重点其实就在第2步，findAdvisorsThatCanApply寻找可用的Advisor。
 
-```
+``` java
 protected List<Advisor> findAdvisorsThatCanApply(
         List<Advisor> candidateAdvisors, Class beanClass, String beanName) {
 
@@ -786,7 +786,7 @@ public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvi
 
 候选Advisor是否为BeanClass可用的Advisor的判断在方法canApply。
 
-```
+``` java
 public static boolean canApply(Advisor advisor, Class<?> targetClass) {
     return canApply(advisor, targetClass, false);
 }
@@ -808,7 +808,7 @@ public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean ha
 
 第一个参数advisor的实际类型是AspectJPointcutAdvisor，它是PointcutAdvisor的子类，所以会进else if分支。
 
-```
+``` java
 public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
     Assert.notNull(pc, "Pointcut must not be null");
     if (!pc.getClassFilter().matches(targetClass)) {
@@ -847,7 +847,7 @@ public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasInt
 
 回到wrapIfNecessary方法，当一个Bean需要生成代理对象，继续来看一下是如何生成代理对象的。
 
-```
+``` java
 if (specificInterceptors != DO_NOT_PROXY) {
     this.advisedBeans.put(cacheKey, Boolean.TRUE);
     Object proxy = createProxy(
@@ -897,7 +897,7 @@ protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 
 接下来继续跟进第4步代理生成逻辑，getProxy。
 
-```
+``` java
 public Object getProxy(@Nullable ClassLoader classLoader) {
     return createAopProxy().getProxy(classLoader);
 }
@@ -910,7 +910,7 @@ public Object getProxy(@Nullable ClassLoader classLoader) {
 
 createAopProxy方法最终会调用到DefaultAopProxyFactory类的createAopProxy方法。
 
-```
+``` java
 public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
     if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
         Class<?> targetClass = config.getTargetClass();
@@ -945,8 +945,8 @@ public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException 
 
 > 参考链接：
 >
-> \1. Spring源码
+> 1. Spring源码
 >
-> \2. [【Spring源码分析】AOP源码解析](https://www.cnblogs.com/xrq730/p/6753160.html)
+> 2. [【Spring源码分析】AOP源码解析](https://www.cnblogs.com/xrq730/p/6753160.html)
 >
-> \3. [【Spring源码分析】AOP源码解析](https://www.cnblogs.com/xrq730/p/6757608.html)
+> 3. [【Spring源码分析】AOP源码解析](https://www.cnblogs.com/xrq730/p/6757608.html)

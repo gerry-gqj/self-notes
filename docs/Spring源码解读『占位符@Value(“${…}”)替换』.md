@@ -4,7 +4,7 @@
 
 上篇文章介绍了xml配置文件中占位符${…}的解析过程，本片文章我们来继续介绍Spring中另一种占位符@Value(“${…}”)，这种占位符一般出现在Java Config中，如下：
 
-```
+``` java
 @Configuration
 public class MyConfiguration {
 
@@ -28,7 +28,7 @@ Spring对这种占位符的解析是通过Bean后置处理器完成的，这里�
 
 在理解AutowiredAnnotationBeanPostProcessor前，我们先来明确一个问题，就是上篇文章介绍的**PropertySourcesPlaceholderConfigurer Bean工厂后置处理器跟本篇文章介绍的Bean后置处理器不是孤立的**。通过Java Config配置方式，如果需要使用占位符，我们也需要告诉Spring容器.properties文件位置，所以可以通过上篇文章介绍的两种方式声明，那么相应的，也就引入了PropertySourcesPlaceholderConfigurer Bean工厂后置处理器。在上篇文章介绍PropertySourcesPlaceholderConfigurer的2.4节，doProcessProperties方法最后会讲valueResolver添加到BeanFactory中：
 
-```
+``` java
 // 添加valueResolver，可用于@Value("${}")解析
 // New in Spring 2.5: resolve placeholders in alias target names and aliases as well.
 beanFactoryToProcess.resolveAliases(valueResolver);
@@ -51,7 +51,7 @@ AutowiredAnnotationBeanPostProcessor是一个Bean后置处理器，按照我们�
 
 还有一个问题需要关注一下，AutowiredAnnotationBeanPostProcessor是何时初始化的，因为我们并没有在xml配置文件中显式声明这样一个bean。我们再使用Java Config配置Bean时，一般会在spring启动配置xml文件中声明如下：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -78,7 +78,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd http://www.spri
 
 ### 2.1 postProcessPropertyValues
 
-```
+``` java
 public PropertyValues postProcessPropertyValues(
         PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
 
@@ -102,7 +102,7 @@ public PropertyValues postProcessPropertyValues(
 
 ### 2.2 findAutowiringMetadata
 
-```
+``` java
 private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, PropertyValues pvs) {
 	// 获取bean的beanName作为缓存的key如果不存在beanName就用类名
 	String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
@@ -197,7 +197,7 @@ private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
 
 ### 2.3 org.springframework.beans.factory.annotation.InjectionMetadata#inject
 
-```
+``` java
 public void inject(Object target, String beanName, PropertyValues pvs) throws Throwable {
 	Collection<InjectedElement> elementsToIterate =
 			(this.checkedElements != null ? this.checkedElements : this.injectedElements);
@@ -214,7 +214,7 @@ public void inject(Object target, String beanName, PropertyValues pvs) throws Th
 
 遍历通过上面方法获取的需要注入的Field和Method元数据，进行数据注入。element.inject方法会对于Field和Method元数据，会调用到不同的方法。这里我们关注占位符的替换，最终会调用到org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.AutowiredFieldElement#inject方法。
 
-```
+``` java
 protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
 		Field field = (Field) this.member;
 		Object value;
@@ -267,7 +267,7 @@ protected void inject(Object bean, String beanName, PropertyValues pvs) throws T
 
 调用AutowireCapableBeanFactory的resolveDependency方法，最终会调用到org.springframework.beans.factory.support.DefaultListableBeanFactory#resolveDependency方法。
 
-```
+``` java
 public Object resolveDependency(DependencyDescriptor descriptor, String requestingBeanName,
 		Set<String> autowiredBeanNames, TypeConverter typeConverter) throws BeansException {
 
@@ -328,7 +328,7 @@ public Object doResolveDependency(DependencyDescriptor descriptor, String beanNa
 
 对于value是String类型的Field，获取到value之后可能会是占位符，所以会通过resolveEmbeddedValue方法做进一步解析，占位符的替换就是在该方法中完成的。
 
-```
+``` java
 public String resolveEmbeddedValue(@Nullable String value) {
     if (value == null) {
         return null;
@@ -351,13 +351,13 @@ public String resolveEmbeddedValue(@Nullable String value) {
 
 那么什么情况下会抛出异常呢？回顾一下Spring容器的embeddedValueResolvers中的元素什么时候添加进去的。通过上篇文章[Spring源码解读『占位符${…}替换』](http://lidol.top/frame/2616/)我们知道，**在解析“context:property-placeholder”标签时初始化了PropertySourcesPlaceholderConfigurer的BeanDefinition，在调用PropertySourcesPlaceholderConfigurer的postProcessBeanFactory方法中，将StringValueResolver添加到embeddedValueResolvers中，一个“context:property-placeholder”标签，最终会生成一个StringValueResolver添加到embeddedValueResolvers中**。同时我们在使用“context:property-placeholder”标签时，可以设置一个属性“ignore-unresolvable”，如下：
 
-```
+``` xml
 <context:property-placeholder location="classpath:my.properties" ignore-unresolvable="true"/>
 ```
 
 该属性默认情况下为false，表示不允许解析器忽略未解析的占位符。那么如果StringValueResolver没有解析到占位符，就会抛异常：
 
-```
+``` java
 throw new IllegalArgumentException("Could not resolve placeholder '" + placeholder + "'" + " in value \"" + value + "\"");
 ```
 
@@ -384,8 +384,8 @@ Spring容器采用反射扫描的发现机制，在探测到Spring容器中有�
 
 > 参考链接：
 >
-> \1. Spring 源码
+> 1. Spring 源码
 >
-> \2. [Spring源码—–AutowiredAnnotationBeanPostProcessor解析Autowired](https://www.jianshu.com/p/fae3953edea0)
+> 2. [Spring源码—–AutowiredAnnotationBeanPostProcessor解析Autowired](https://www.jianshu.com/p/fae3953edea0)
 >
-> \3. [spring的启动过程04.1-value注解替换过程](https://blog.csdn.net/qq_28580959/article/details/60129329)
+> 3. [spring的启动过程04.1-value注解替换过程](https://blog.csdn.net/qq_28580959/article/details/60129329)

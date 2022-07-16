@@ -3,6 +3,7 @@
 * [Java泛型机制](docs/Generic.md)
 * [Java注解和反射机制](docs/Annotation.md)
 * [Cglib代理](docs/Cglib.md)
+* [RabbitMQ_java_client](docs/RabbitMQ_java_client.md)
 * [Spring](docs/Spring.md)
 * [SpringMVC](docs/SpringMVC.md)
 * [Token](docs/Token.md)

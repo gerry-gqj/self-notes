@@ -717,7 +717,7 @@ spring:
 
 *****该配置发送端不需配置。接收端可选配置，非必须。
 
-```java
+``` java
 // 队列名
 public static final String FANOUT_QUEUE_NAME = "fanout_queue";
 //交换机名
@@ -762,7 +762,7 @@ Binding bindingDirect() {
 
 不需要交换机，直接发送至queue.
 
-```java
+``` java
 //AqmpTemplate功能一样，也可以用
     @Autowired
     private RabbitTemplate template;
@@ -779,7 +779,7 @@ Binding bindingDirect() {
 
 ### direct模式/topic模式等需要交换机
 
-```java
+``` java
 @Test
     public void sendDirect() {
         String context = "direct---> " + new Date();
@@ -792,7 +792,7 @@ Binding bindingDirect() {
 
 ### 注解使用
 
-```java
+``` java
 //基础注解，指定queue的名称，可以多个。如果是simple不需要交换机的直接写队列名称就好。
     //如果是其他的也想只指定一个queues——name的话，需要上面的配置类配置queue或者其他绑定关系
     @RabbitListener(queues = "ly_simple")
@@ -842,7 +842,7 @@ Binding bindingDirect() {
 
 
 
-```csharp
+``` java
 @RabbitListener(queues = "debug")
 public void processMessage1(Message bytes) {
     System.out.println(new String(bytes));
@@ -864,7 +864,7 @@ public void processMessage1(Message bytes) {
 
 - 通过 @RabbitListener 的 bindings 属性声明 Binding（若 RabbitMQ 中不存在该绑定所需要的 Queue、Exchange、RouteKey 则自动创建，若存在则抛出异常）
 
-```csharp
+``` java
 @RabbitListener(bindings = @QueueBinding(
         exchange = @Exchange(value = "topic.exchange",durable = "true",type = "topic"),
         value = @Queue(value = "consumer_queue",durable = "true"),
@@ -882,7 +882,7 @@ public void processMessage1(Message message) {
 - @RabbitListener 可以标注在类上面，需配合 @RabbitHandler 注解一起使用
 - @RabbitListener 标注在类上面表示当有收到消息的时候，就交给 @RabbitHandler 的方法处理，具体使用哪个方法处理，根据 MessageConverter 转换后的参数类型
 
-```java
+``` java
 @Component
 @RabbitListener(queues = "consumer_queue")
 public class Receiver {

@@ -1,8 +1,10 @@
 # [Spring MVC源码解读『Spring MVC如何提供Rest接口』](http://lidol.top/frame/3334/)
 
-2021-01-08 分类：[Spring MVC源码](http://lidol.top/category/frame/sprinmvc_sc/) / [框架](http://lidol.top/category/frame/) 阅读(499) 评论(0)
+[Spring MVC源码](http://lidol.top/category/frame/sprinmvc_sc/) / [框架](http://lidol.top/category/frame/)
 
-上篇文章我们介绍了Spring MVC是如何响应前段Web请求的，文章中我们介绍了Controller和Jsp如何配合工作的（但其实文章大部分篇幅还是在介绍Controller，Jsp仅仅是在最后在DispatcherServlet中做了一个跳转）。因为在实际开发中，很少有这种使用Jsp的项目了，后端在开发过程中的角色一般都是提供业务数据，前端负责页面的展示和数据的组装（现在前段使用一些框架Vue、React甚至直接使用ajax都能很轻松实现这一点），类似于之前介绍MVC中提到的前后端分离的模式：
+<p>
+上篇文章我们介绍了Spring MVC是如何响应前段Web请求的，文章中我们介绍了Controller和Jsp如何配合工作的（但其实文章大部分篇幅还是在介绍Controller，Jsp仅仅是在最后在DispatcherServlet中做了一个跳转）。因为在实际开发中，很少有这种使用Jsp的项目了，后端在开发过程中的角色一般都是提供业务数据，前端负责页面的展示和数据的组装（现在前段使用一些框架Vue、React甚至直接使用ajax都能很轻松实现这一点），类似于之前介绍MVC中提到的前后端分离的模式
+</p>
 
 [![img](Spring MVC源码解读『Spring MVC如何提供Rest接口』.assets/mvvm_mvc-1655198819648.png)](http://cdn.lidol.top/lidol_blog/mvvm_mvc.png)
 
@@ -17,7 +19,7 @@
 
 ### 1.1 pom.xml
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -69,6 +71,7 @@
     </dependencies>
     
 </project>
+
 ```
 
 因为要支持Json输入输出，所以这里新引入了jackson相关的包。这里jackson相关包的引入非常重要，因为@RequestBody和@ResponseBody最终能生效，需要使用到**MappingJackson2HttpMessageConverter**这个转换器，而这个转换器的默认添加逻辑需要依赖jackson相关的两个类。这个下面详细介绍。
@@ -77,7 +80,7 @@
 
 spring.xml
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -103,7 +106,7 @@ spring.xml
 
 spring-mvc.xml
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -158,7 +161,7 @@ spring-mvc.xml
 
 关于web资源配置，主要是用于配置tomcat配置文件web.xml，跟之前的文章保持一致即可，如下：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -202,7 +205,7 @@ spring-mvc.xml
 
 同时我们再web根目录下，创建一个静态的index.jsp文件，以便方便我们确定Tomcat容器已经成功启动了（Tomcat成功启动后，会访问使用默认浏览器访问该index.jsp文件）。
 
-```
+``` jsx
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
   <head>
@@ -216,7 +219,7 @@ spring-mvc.xml
 
 ### 1.4 Controller
 
-```
+``` java
 @Controller
 @RequestMapping("/demo/rest")
 public class RestController {
@@ -301,7 +304,7 @@ public class MyRestResponse {
 
 上篇文章，我们介绍到，Spring MVC分别使用**HandlerMethodArgumentResolver**和**HandlerMethodReturnValueHandler**完成**解析HTTP报文中对应的方法参数**以及**返回值解析为HTTP响应报文**。但是对于HandlerMethodArgumentResolver和HandlerMethodReturnValueHandler是如何完成解析的，并没有详细介绍。其实HandlerMethodArgumentResolver和HandlerMethodReturnValueHandler最终是通过HttpMessageConverter来完成的转换。
 
-```
+``` java
 public interface HttpMessageConverter<T> {
 
     // 当前转换器是否能将HTTP报文转换为对象类型
@@ -351,7 +354,7 @@ public interface HandlerMethodReturnValueHandler {
 
 上篇文章我们也介绍到，请求处理过程中会调用org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod#invokeAndHandle方法来处理。
 
-```
+``` java
 public void invokeAndHandle(ServletWebRequest webRequest, ModelAndViewContainer mavContainer,
         Object... providedArgs) throws Exception {
 
@@ -390,7 +393,7 @@ public void invokeAndHandle(ServletWebRequest webRequest, ModelAndViewContainer 
 
 ### 2.1 参数解析
 
-```
+``` java
 public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
         Object... providedArgs) throws Exception {
 
@@ -449,7 +452,7 @@ private Object[] getMethodArgumentValues(NativeWebRequest request, @Nullable Mod
 
 我们来看看之前提到的RequestResponseBodyMethodProcessor，是如何解析参数的。
 
-```
+``` java
 public boolean supportsParameter(MethodParameter parameter) {
     return parameter.hasParameterAnnotation(RequestBody.class);
 }
@@ -457,7 +460,7 @@ public boolean supportsParameter(MethodParameter parameter) {
 
 首先是supportsParameter方法，可以看到，RequestResponseBodyMethodProcessor支持解析的参数类型为，存在RequestBody注解的参数。再看一下RequestResponseBodyMethodProcessor是如何解析参数的：
 
-```
+``` java
 public Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
         NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
@@ -570,7 +573,7 @@ protected <T> Object readWithMessageConverters(HttpInputMessage inputMessage, Me
 
 所以其实HandlerMethodArgumentResolver解析HTTP Request的过程，就是调用HttpMessageConverter的read方法实现的。关于HttpMessageConverter，Spring MVC默认帮我们初始化了一些类型的Converter，在<mvc:annotation-driven>标签的解析器AnnotationDrivenBeanDefinitionParser，会生成一些默认的HttpMessageConverter，并添加到RequestMappingHandlerAdapter BeanDefinition中。如下：
 
-```
+``` java
 private ManagedList<?> getMessageConverters(Element element, @Nullable Object source, ParserContext parserContext) {
     Element convertersElement = DomUtils.getChildElementByTagName(element, "message-converters");
     ManagedList<? super Object> messageConverters = new ManagedList<>();
@@ -646,7 +649,7 @@ private ManagedList<?> getMessageConverters(Element element, @Nullable Object so
 
 可以看到，Spring MVC默认为我们生成了很多HttpMessageConverter，比如我们这里Json进行前后端交互需要使用到的MappingJackson2HttpMessageConverter，就有一个添加的条件**jackson2Present**。
 
-```
+``` java
 private static final boolean jackson2Present =
     ClassUtils.isPresent("com.fasterxml.jackson.databind.ObjectMapper",
             AnnotationDrivenBeanDefinitionParser.class.getClassLoader()) &&
@@ -656,7 +659,7 @@ private static final boolean jackson2Present =
 
 所以，只要我们引入上述pom.xml中jackson相关的包，这里Spring MVC就会默认帮我们向容器中添加MappingJackson2HttpMessageConverter。所以也不需要我们再spring-mvc.xml配置文件中手动添加HttpMessageConverter了，如下所示：
 
-```
+``` xml
 <mvc:annotation-driven>
     <mvc:message-converters>
         <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
@@ -666,7 +669,7 @@ private static final boolean jackson2Present =
 
 最后我们看一下，MappingJackson2HttpMessageConverter是如何解析参数的。
 
-```
+``` java
 @Override
 public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
     return canRead(clazz, null, mediaType);
@@ -689,7 +692,7 @@ public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable Med
 
 首先是canRead，判断MappingJackson2HttpMessageConverter是否支持转换当前转换（将HTTP请求内容转换为@RequestBody标注的java对象）。其实就是使用jackson的objectMapper判断是否可以反序列化当前Java类型。
 
-```
+``` java
 @Override
 public final T read(Class<? extends T> clazz, HttpInputMessage inputMessage) throws IOException {
     return readInternal(clazz, inputMessage);
@@ -731,7 +734,7 @@ read方法也非常简单，其实就是使用objectMapper的readValue方法，�
 
 在org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod#invokeAndHandle方法中，有如下一段逻辑：
 
-```
+``` java
 // 返回值处理
 this.returnValueHandlers.handleReturnValue(
     returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
@@ -739,7 +742,7 @@ this.returnValueHandlers.handleReturnValue(
 
 这里的returnValueHandlers，本源来自于RequestMappingHandlerAdapter，类型为org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite，其实是HandlerMethodReturnValueHandler的集合。HandlerMethodReturnValueHandlerComposite提供的一些方法，都适合基于内部HandlerMethodReturnValueHandler的集合实现的。我们来看一下返回值处理方法handleReturnValue：
 
-```
+``` java
 @Override
 public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
         ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
@@ -756,7 +759,7 @@ public void handleReturnValue(@Nullable Object returnValue, MethodParameter retu
 
 继续来看一下如何选择HandlerMethodReturnValueHandler的：
 
-```
+``` java
 private HandlerMethodReturnValueHandler selectHandler(@Nullable Object value, MethodParameter returnType) {
     boolean isAsyncValue = isAsyncReturnValue(value, returnType);
     // 遍历returnValueHandlers，如果当前HandlerMethodReturnValueHandler支持该returnType，返回
@@ -774,7 +777,7 @@ private HandlerMethodReturnValueHandler selectHandler(@Nullable Object value, Me
 
 上面介绍过，@ResponseBody注解对应的ReturnValueHandler为RequestResponseBodyMethodProcessor，所以我们来看一下RequestResponseBodyMethodProcessor的supportsReturnType方法：
 
-```
+``` java
 @Override
 public boolean supportsReturnType(MethodParameter returnType) {
     return (AnnotatedElementUtils.hasAnnotation(returnType.getContainingClass(), ResponseBody.class) ||
@@ -786,7 +789,7 @@ public boolean supportsReturnType(MethodParameter returnType) {
 
 接下来具体来看一下RequestResponseBodyMethodProcessor是如何处理@ResponseBody返回值的。
 
-```
+``` java
 @Override
 public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
         ModelAndViewContainer mavContainer, NativeWebRequest webRequest)
@@ -925,7 +928,7 @@ protected <T> void writeWithMessageConverters(@Nullable T value, MethodParameter
 
 核心就在HttpMessageConverter选择上，我们上面介绍过，@ResponseBody注解会使用MappingJackson2HttpMessageConverter完成返回值转换。所以来看一下MappingJackson2HttpMessageConverter是如何支持的，首先是canWrite方法：
 
-```
+``` java
 public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
     if (!canWrite(mediaType)) {
         return false;
@@ -941,7 +944,7 @@ public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
 
 该方法定义在MappingJackson2HttpMessageConverter的父类AbstractJackson2HttpMessageConverter中，其实就是判断objectMapper是否能够序列化该类型的对象，其中objectMapper在构造函数中指定：
 
-```
+``` java
 public MappingJackson2HttpMessageConverter() {
     this(Jackson2ObjectMapperBuilder.json().build());
 }
@@ -955,7 +958,7 @@ public MappingJackson2HttpMessageConverter() {
 
 接下来我们来看一下MappingJackson2HttpMessageConverter的write方法，该方法定义在其父类AbstractGenericHttpMessageConverter中：
 
-```
+``` java
 public final void write(final T t, @Nullable final Type type, @Nullable MediaType contentType,
         HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
 
@@ -986,7 +989,7 @@ public final void write(final T t, @Nullable final Type type, @Nullable MediaTyp
 
 这里outputMessage类型为ServletServerHttpResponse，非StreamingHttpOutputMessage实例，所以会调用writeInternal方法，而writeInternal方法在AbstractGenericHttpMessageConverter是抽象方法，子类AbstractJackson2HttpMessageConverter实现了该方法：
 
-```
+``` java
 protected void writeInternal(Object object, @Nullable Type type, HttpOutputMessage outputMessage)
         throws IOException, HttpMessageNotWritableException {
 
@@ -1048,7 +1051,7 @@ protected void writeInternal(Object object, @Nullable Type type, HttpOutputMessa
 
 这里的outputMessage.getBody()，outputMessage类型为ServletServerHttpResponse，getBody方法如下：
 
-```
+``` java
 public OutputStream getBody() throws IOException {
     this.bodyUsed = true;
     writeHeaders();
@@ -1062,8 +1065,8 @@ public OutputStream getBody() throws IOException {
 
 > 参考链接：
 >
-> \1. Spring MVC源码
+> 1. Spring MVC源码
 >
-> \2. [SpringMVC@RequestBody 415 错误处理](https://ld246.com/article/1482498816511)
+> 2. [SpringMVC@RequestBody 415 错误处理](https://ld246.com/article/1482498816511)
 >
-> \3. [3. 懂了这些，方敢在简历上说会用Jackson写JSON](https://www.cnblogs.com/yourbatman/p/13385967.html)
+> 3. [3. 懂了这些，方敢在简历上说会用Jackson写JSON](https://www.cnblogs.com/yourbatman/p/13385967.html)

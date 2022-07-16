@@ -8,7 +8,7 @@
 
 上篇文章中，我们的web.xml配置文件中配置如下：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -60,7 +60,7 @@
 
 那么按照我们之前Tomcat的文章介绍，Spring MVC的启动过程肯定跟这个ContextLoaderListener有关，这是Spring MVC跟Tomcat的连接点。ContextLoaderListener实现了ServletContextListener接口，可以在Tomcat Context初始化后执行监听器内部的初始化逻辑。
 
-```
+``` java
 public interface ServletContextListener extends EventListener {
 
     /**
@@ -95,7 +95,7 @@ Tomcat启动时，**监听器ContextLoaderListener**创建一个XMLWebApplicatio
 
 Spring MVC的启动入口肯定在ContextLoaderListener覆盖的contextInitialized方法中。
 
-```
+``` java
 @Override
 public void contextInitialized(ServletContextEvent event) {
     initWebApplicationContext(event.getServletContext());
@@ -104,7 +104,7 @@ public void contextInitialized(ServletContextEvent event) {
 
 ### 1.1 initWebApplicationContext
 
-```
+``` java
 public WebApplicationContext initWebApplicationContext(ServletContext servletContext) {
     // 1. 获取ServletContext的ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE属性，如果不为空，说明Spring MVC父容器已经初始化，直接抛异常
     // ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE = "WebApplicationContext.ROOT"
@@ -189,7 +189,7 @@ initWebApplicationContext方法中主要完成四件事：
 
 ### 1.2 createWebApplicationContext
 
-```
+``` java
 protected WebApplicationContext createWebApplicationContext(ServletContext sc) {
     // 1. 确定要创建的WebApplicationContext的Class类型
     Class<?> contextClass = determineContextClass(sc);
@@ -239,7 +239,7 @@ XmlWebApplicationContext继承关系如下：
 
 ### 1.3 configureAndRefreshWebApplicationContext
 
-```
+``` java
 protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicationContext wac, ServletContext sc) {
     if (ObjectUtils.identityToString(wac).equals(wac.getId())) {
         // The application context id is still set to its original default value
@@ -290,7 +290,7 @@ protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicati
 
 调用wac.refresh()方法，我们知道wac的真实类型为XmlWebApplicationContext，而XmlWebApplicationContext方法的refresh方法继承自AbstractApplicationContext。而我们之前的文章[Spring源码解读『IOC容器2-Bean加载过程』](http://lidol.top/frame/2524/)，介绍SpringBean加载过程的核心流程就是在介绍该refresh方法。
 
-```
+``` java
 @Override
 public void refresh() throws BeansException, IllegalStateException {
 	synchronized (this.startupShutdownMonitor) {
@@ -370,7 +370,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 我们在web.xml配置文件中配置了一个Servlet：
 
-```
+``` xml
 <servlet>
     <servlet-name>springMvc</servlet-name>
     <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
@@ -390,7 +390,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 DispatcherServlet的init方法继承自其父类HttpServletBean，如下：
 
-```
+``` java
 public final void init() throws ServletException {
     if (logger.isDebugEnabled()) {
         logger.debug("Initializing servlet '" + getServletName() + "'");
@@ -428,7 +428,7 @@ public final void init() throws ServletException {
 
 initServletBean()方法的实现在子类FrameworkServlet中：
 
-```
+``` java
 protected final void initServletBean() throws ServletException {
     getServletContext().log("Initializing Spring FrameworkServlet '" + getServletName() + "'");
     if (this.logger.isInfoEnabled()) {
@@ -462,7 +462,7 @@ protected final void initServletBean() throws ServletException {
 
 initWebApplicationContext定义在DispatcherServlet父类FrameworkServlet中。
 
-```
+``` java
 protected WebApplicationContext initWebApplicationContext() {
     // 1. 从ServletContext获取Spring MVC父容器，之前在父容器刷新时，我们将父容器设置到了ServletContext中
     WebApplicationContext rootContext =
@@ -542,7 +542,7 @@ initWebApplicationContext方法中核心包括如下几个步骤：
 
 org.springframework.web.servlet.FrameworkServlet#createWebApplicationContext。
 
-```
+``` java
 protected WebApplicationContext createWebApplicationContext(WebApplicationContext parent) {
     return createWebApplicationContext((ApplicationContext) parent);
 }
@@ -581,7 +581,7 @@ protected WebApplicationContext createWebApplicationContext(ApplicationContext p
 
 这里的configureAndRefreshWebApplicationContext方法和上面Spring MVC父容器刷新中的configureAndRefreshWebApplicationContext不是一个方法。该方法定义在FrameworkServlet。
 
-```
+``` java
 protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicationContext wac) {
     if (ObjectUtils.identityToString(wac).equals(wac.getId())) {
         // The application context id is still set to its original default value
@@ -622,7 +622,7 @@ protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicati
 
 完成Spring MVC子容器刷新后，我们回到2.1节的步骤6，**将Spring MVC子容器设置到ServletContext**。
 
-```
+``` java
 String attrName = getServletContextAttributeName();
 getServletContext().setAttribute(attrName, wac);
 
@@ -641,7 +641,7 @@ public static final String SERVLET_CONTEXT_PREFIX = FrameworkServlet.class.getNa
 
 在上述2.1节步骤5，initWebApplicationContext方法中，调用了onRefresh方法，初始化DispatcherServlet中所有Spring MVC相关组件。onRefresh方法定义在FrameworkServlet中，子类DispatcherServlet中覆盖了该方法。
 
-```
+``` java
 @Override
 protected void onRefresh(ApplicationContext context) {
     initStrategies(context);
@@ -650,7 +650,7 @@ protected void onRefresh(ApplicationContext context) {
 
 方法中调用了initStrategies方法，用于初始化DispatcherServlet中所有需要用到的策略成员变量。
 
-```
+``` java
 /**
  * Initialize the strategy objects that this servlet uses.
  * <p>May be overridden in subclasses in order to initialize further strategy objects.
@@ -685,7 +685,7 @@ protected void initStrategies(ApplicationContext context) {
 
 我们来看一下DispatcherServlet这三个组件是如何初始化的。
 
-```
+``` java
 private void initHandlerMappings(ApplicationContext context) {
     this.handlerMappings = null;
 
@@ -731,7 +731,7 @@ private void initHandlerMappings(ApplicationContext context) {
 
 [![img](Spring MVC源码解读『Spring MVC启动过程』.assets/20201227083627.png)](http://cdn.lidol.top/lidol_blog/20201227083627.png)
 
-```
+``` java
 private void initHandlerAdapters(ApplicationContext context) {
     this.handlerAdapters = null;
 
@@ -804,7 +804,7 @@ private void initViewResolvers(ApplicationContext context) {
 
 在使用SpringMVC时，如果我们使用xml配置，会在xml文件中添加如下注解：
 
-```
+``` xml
 <mvc:annotation-driven>
     <!--解决以@ResponseBody直接返回字符串时中文乱码问题-->
     <mvc:message-converters register-defaults="true">
@@ -817,19 +817,19 @@ private void initViewResolvers(ApplicationContext context) {
 
 并且xml文件会声明命名空间：
 
-```
+``` xml
 http://www.springframework.org/schema/mvc
 ```
 
 解析<mvc:annotation-driven>注解的nameSpaceUri = “http://www.springframework.org/schema/mvc”。在spring-webmvc jar的META-INF目录下有一个spring.handlers的文件，内容如下：
 
-```
+``` xml
 http\://www.springframework.org/schema/mvc=org.springframework.web.servlet.config.MvcNamespaceHandler
 ```
 
 也就是说，当遇到”http://www.springframework.org/schema/mvc”uri的注解解析时，使用MvcNamespaceHandler配置解析。
 
-```
+``` java
 public class MvcNamespaceHandler extends NamespaceHandlerSupport {
 
 	@Override
@@ -854,7 +854,7 @@ public class MvcNamespaceHandler extends NamespaceHandlerSupport {
 
 所以会使用AnnotationDrivenBeanDefinitionParser解析<mvc:annotation-driven>注解。AnnotationDrivenBeanDefinitionParser的解析过程都在其parse方法中，主要用来注册Spring MVC各种组件、解析器和转换器（比如HandlerMapping、HandlerAdapter、HandlerExceptionResolver等）。下面来看一下HandlerMapping的注册逻辑：
 
-```
+``` java
 RootBeanDefinition handlerMappingDef = new RootBeanDefinition(RequestMappingHandlerMapping.class);
 handlerMappingDef.setSource(source);
 handlerMappingDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
@@ -877,7 +877,7 @@ parserContext.registerComponent(new BeanComponentDefinition(handlerMappingDef, H
 
 可以看到HandlerMapping的实际注册类型为RequestMappingHandlerMapping，其抽象基类AbstractHandlerMethodMapping实现了InitializingBean接口。RequestMappingHandlerMapping重写了afterPropertiesSet方法，当RequestMappingHandlerMapping对象初始化时，afterPropertiesSet方法会被调用。也就是在此方法中完成了RequestMappingHandlerMapping的一些初始化工作（比如请求url和Controller方法的映射）。
 
-```
+``` java
 public void afterPropertiesSet() {
     this.config = new RequestMappingInfo.BuilderConfiguration();
     this.config.setUrlPathHelper(getUrlPathHelper());
@@ -929,7 +929,7 @@ protected void initHandlerMethods() {
 
 可以看到，上述方法对于@Controller或@RequestMapping注解的类，调用detectHandlerMethods进行处理。
 
-```
+``` java
 @Override
 protected boolean isHandler(Class<?> beanType) {
     return (AnnotatedElementUtils.hasAnnotation(beanType, Controller.class) ||
@@ -968,7 +968,7 @@ protected void detectHandlerMethods(final Object handler) {
 
 首先看一下上述detectHandlerMethods方法步骤1中，RequestMappingInfo如何生成的。
 
-```
+``` java
 public static <T> Map<Method, T> selectMethods(Class<?> targetType, final MetadataLookup<T> metadataLookup) {
     final Map<Method, T> methodMap = new LinkedHashMap<>();
     Set<Class<?>> handlerTypes = new LinkedHashSet<>();
@@ -1034,7 +1034,7 @@ public static void doWithMethods(Class<?> clazz, MethodCallback mc, @Nullable Me
 
 所以步骤2.2，使用了selectMethods方法中传入的MethodCallback函数式参数，如下：
 
-```
+``` java
 method -> {
     Method specificMethod = ClassUtils.getMostSpecificMethod(method, targetClass);
     T result = metadataLookup.inspect(specificMethod);
@@ -1049,7 +1049,7 @@ method -> {
 
 逻辑也非常简单，就是通过调用metadataLookup.inspect方法，通过Method获取RequestMappingInfo。然后将Method\RequestMappingInfo对添加到methodMap中。而metadataLookup参数是在上述detectHandlerMethods方法中定义的，如下：
 
-```
+``` java
 (MethodIntrospector.MetadataLookup<T>) method -> {
     try {
         return getMappingForMethod(method, userType);
@@ -1063,7 +1063,7 @@ method -> {
 
 getMappingForMethod方法定义在RequestMappingHandlerMapping类中：
 
-```
+``` java
 protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
     RequestMappingInfo info = createRequestMappingInfo(method);
     if (info != null) {
@@ -1078,7 +1078,7 @@ protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handler
 
 所以，这里总结一下RequestMappingInfo如何生成的，**简单地讲就是，反射clazz，获取clazz内部所有的方法，对于每个Method，调用getMappingForMethod方法生成RequestMappingInfo**。
 
-```
+``` java
 private RequestMappingInfo createRequestMappingInfo(AnnotatedElement element) {
     // 1. 获取方法注解
     RequestMapping requestMapping = AnnotatedElementUtils.findMergedAnnotation(element, RequestMapping.class);
@@ -1110,7 +1110,7 @@ protected RequestMappingInfo createRequestMappingInfo(
 
 接下来来看一下来上述detectHandlerMethods方法步骤2中的registerHandlerMethod方法，看一下URL和Controller方法是如何绑定的。
 
-```
+``` java
 protected void registerHandlerMethod(Object handler, Method method, T mapping) {
     this.mappingRegistry.register(mapping, handler, method);
 }
@@ -1118,7 +1118,7 @@ protected void registerHandlerMethod(Object handler, Method method, T mapping) {
 
 可以看到，这里其实调用了成员变量mappingRegistry的register方法。其中mappingRegistry的类型为org.springframework.web.servlet.handler.AbstractHandlerMethodMapping.MappingRegistry，是AbstractHandlerMethodMapping的内部类。
 
-```
+``` java
 class MappingRegistry {
 
     private final Map<T, MappingRegistration<T>> registry = new HashMap<>();
@@ -1146,7 +1146,7 @@ class MappingRegistry {
 
 通过urlLookup和mappingLookup就能将请求的定位到Controller的某个方法上。registry存储了RequestMappingInfo到MappingRegistration的映射，MappingRegistration中保存了所有Mapping注册信息，用于unregister。
 
-```
+``` java
 public void register(T mapping, Object handler, Method method) {
     // 加锁，保证一致性
     this.readWriteLock.writeLock().lock();
@@ -1199,7 +1199,7 @@ public void register(T mapping, Object handler, Method method) {
 
 其中BeanDefinition的注册也在<mvc:annotation-driven>解析时，通过AnnotationDrivenBeanDefinitionParser的parse方法注册的。如下：
 
-```
+``` java
 RootBeanDefinition handlerAdapterDef = new RootBeanDefinition(RequestMappingHandlerAdapter.class);
 handlerAdapterDef.setSource(source);
 handlerAdapterDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
@@ -1233,7 +1233,7 @@ readerContext.getRegistry().registerBeanDefinition(HANDLER_ADAPTER_BEAN_NAME , h
 
 所以HandlerAdapter的类型为RequestMappingHandlerAdapter，跟RequestMappingHandlerMapping类一样，RequestMappingHandlerAdapter也实现了InitializingBean接口，在初始化时会调用afterPropertiesSet方法。
 
-```
+``` java
 public void afterPropertiesSet() {
     // Do this first, it may add ResponseBody advice beans
     initControllerAdviceCache();
@@ -1260,7 +1260,7 @@ public void afterPropertiesSet() {
 
 初始化参数解析器getDefaultArgumentResolvers方法：
 
-```
+``` java
 /**
  * Return the list of argument resolvers to use including built-in resolvers
  * and custom resolvers provided via {@link #setCustomArgumentResolvers}.
@@ -1313,7 +1313,7 @@ private List<HandlerMethodArgumentResolver> getDefaultArgumentResolvers() {
 
 初始化InitBinder解析器getDefaultInitBinderArgumentResolvers方法：
 
-```
+``` java
 /**
  * Return the list of argument resolvers to use for {@code @InitBinder}
  * methods including built-in and custom resolvers.
@@ -1350,7 +1350,7 @@ private List<HandlerMethodArgumentResolver> getDefaultInitBinderArgumentResolver
 
 初始化返回值处理器getDefaultReturnValueHandlers方法：
 
-```
+``` java
 /**
  * Return the list of return value handlers to use including built-in and
  * custom handlers provided via {@link #setReturnValueHandlers}.
@@ -1402,7 +1402,7 @@ Spring MVC内置了对多种返回类型，返回方式的返回值处理器， 
 
 这样HandlerAdapter Bean就在容器中完成了初始化，后面DispatcherServlet初始化时，在initStrategies方法中，调用initHandlerAdapters方法初始化DispatcherServlet的handlerAdapters成员变量时，就可以根据beanName HANDLER_MAPPING_BEAN_NAME从容器中获取到HandlerMapping对象了。
 
-```
+``` java
 private void initHandlerAdapters(ApplicationContext context) {
     this.handlerAdapters = null;
 
@@ -1445,7 +1445,7 @@ private void initHandlerAdapters(ApplicationContext context) {
 
 之所以可以实现上述隔离逻辑，是因为在bean初始化的方法doGetBean方法中，有一段如下逻辑：
 
-```
+``` java
 // Check if bean definition exists in this factory.
 BeanFactory parentBeanFactory = getParentBeanFactory();
 if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
@@ -1474,6 +1474,6 @@ if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 
 > 参考链接：
 >
-> \1. Spring MVC源码
+> 1. Spring MVC源码
 >
-> \2. [Spring和SpringMVC的子容器关系](https://www.cnblogs.com/zyzcj/p/5286190.html)
+> 2. [Spring和SpringMVC的子容器关系](https://www.cnblogs.com/zyzcj/p/5286190.html)

@@ -10,7 +10,7 @@ Spring提供了AnnotationConfigApplicationContext类，实现通过Java Config�
 
 ### 1.1 定义Bean
 
-```
+``` java
 public class TestBeanA {
     private String testName;
 
@@ -37,7 +37,7 @@ public class TestBeanB {
 
 ### 1.2 定义Java Config配置类
 
-```
+``` java
 @Configuration
 public class MyConfiguration {
 
@@ -61,7 +61,7 @@ public class MyConfiguration {
 
 ### 1.3 测试类
 
-```
+``` java
 public class AnnotationConfigTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new AnnotationConfigApplicationContext(MyConfiguration.class);
@@ -91,7 +91,7 @@ configTestBeanB
 
 AnnotationConfigApplicationContext继承了类GenericApplicationContext，该类继承了抽象类AbstractApplicationContext实现了BeanDefinitionRegistry接口，并持有一个DefaultListableBeanFactory类型的成员变量，可以讲GenericApplicationContext既是Bean工厂，又是Bean注册中心（跟之前介绍的AbstractRefreshableApplicationContext非常类似）。可以通过如下方式使用：
 
-```
+``` java
 GenericApplicationContext ctx = new GenericApplicationContext();
 XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(ctx);
 xmlReader.loadBeanDefinitions(new ClassPathResource("applicationContext.xml"));
@@ -104,7 +104,7 @@ MyBean myBean = (MyBean) ctx.getBean("myBean");
 
 关于AbstractApplicationContext，之前介绍xml启动Spring容器的时候已经介绍过，该类中定义了很多Bean工厂的模板方法，并允许子类根据需要覆盖模板方法。最重要的我们知道，该类中定义了Spring容器刷新的流程：
 
-```
+``` java
 org.springframework.context.support.AbstractApplicationContext#refresh
 ```
 
@@ -112,7 +112,7 @@ org.springframework.context.support.AbstractApplicationContext#refresh
 
 ### 2.1 AnnotationConfigApplicationContext(java.lang.Class…)
 
-```
+``` java
 public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
     // 1. 调用无参构造函数
     this();
@@ -125,7 +125,7 @@ public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
 
 这里第3步refresh方法就是AbstractApplicationContext类中定义的refresh方法，通过xml启动也调用了该方法。通过xml启动时，调用的方法如下：
 
-```
+``` java
 public ClassPathXmlApplicationContext(String configLocation) throws BeansException {
 	this(new String[] {configLocation}, true, null);
 }
@@ -146,7 +146,7 @@ public ClassPathXmlApplicationContext(
 
 这里我们把之前的文章[Spring源码解读『IOC容器2-Bean加载过程』](http://lidol.top/frame/2524/)中介绍的refresh方法的流程拿到这里，来讲一下通过配置类和通过配置文件启动的区别：
 
-```
+``` java
 @Override
 public void refresh() throws BeansException, IllegalStateException {
 	synchronized (this.startupShutdownMonitor) {
@@ -229,7 +229,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 回到ConfigurationClassPostProcessor类启动的构造函数，第1步调用了无参构造函数，如下：
 
-```
+``` java
 public AnnotationConfigApplicationContext() {
 	this.reader = new AnnotatedBeanDefinitionReader(this);
 	this.scanner = new ClassPathBeanDefinitionScanner(this);
@@ -240,7 +240,7 @@ public AnnotationConfigApplicationContext() {
 
 继续跟进AnnotatedBeanDefinitionReader构造函数：
 
-```
+``` java
 public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry) {
 	this(registry, getOrCreateEnvironment(registry));
 }
@@ -256,7 +256,7 @@ public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environmen
 
 最后调用了AnnotationConfigUtils.registerAnnotationConfigProcessors方法，继续跟进：
 
-```
+``` java
 public static void registerAnnotationConfigProcessors(BeanDefinitionRegistry registry) {
 	registerAnnotationConfigProcessors(registry, null);
 }
@@ -337,7 +337,7 @@ public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
 
 通过配置类启动Spring容器，我们在AnnotationConfigApplicationContext构造函数中指定了配置类，在构造函数第2步调用了register方法，在这个方法中将配置类注册为BeanDefinition。
 
-```
+``` java
 public void register(Class<?>... annotatedClasses) {
 	Assert.notEmpty(annotatedClasses, "At least one annotated class must be specified");
 	// 使用AnnotatedBeanDefinitionReader将配置类转化为BeanDefinition并注册到BeanFactory
@@ -349,8 +349,8 @@ public void register(Class<?>... annotatedClasses) {
 
 > 参考链接：
 >
-> \1. Spring源码
+> 1. Spring源码
 >
-> \2. [@ComponentScan 扫包 @Import添加组件](https://www.cnblogs.com/li-lun/p/12780485.html)
+> 2. [@ComponentScan 扫包 @Import添加组件](https://www.cnblogs.com/li-lun/p/12780485.html)
 >
-> \3. [【译】Spring 4 @PropertySource和@Value注解示例](https://www.cnblogs.com/chenpi/p/6212534.html)
+> 3. [【译】Spring 4 @PropertySource和@Value注解示例](https://www.cnblogs.com/chenpi/p/6212534.html)

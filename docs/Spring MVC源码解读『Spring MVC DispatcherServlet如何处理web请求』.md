@@ -23,7 +23,7 @@ DispatcherServlet间接实现了抽象类HttpServlet，按照我们之前文章[
 
 其实DispatcherServlet为了支持PATCH请求，重写了HttpServlet的service方法，如下：
 
-```
+``` java
 /**
  * Override the parent class implementation in order to intercept PATCH requests.
  */
@@ -43,7 +43,7 @@ protected void service(HttpServletRequest request, HttpServletResponse response)
 
 所以其实除了PATCH请求，其余类型的请求还跟还是通过子类重写的do**方法处理的。下面来看一下FrameworkServlet中重写的do**方法：
 
-```
+``` java
 @Override
 protected final void doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException {
@@ -75,7 +75,7 @@ protected final void doDelete(HttpServletRequest request, HttpServletResponse re
 
 可以看到，最终都是通过processRequest方法处理的。
 
-```
+``` java
 protected final void processRequest(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException {
 
@@ -133,14 +133,14 @@ protected final void processRequest(HttpServletRequest request, HttpServletRespo
 
 可以看出，processRequest方法的核心就是调用doService方法，处理请求。doService方法定义在FrameworkServlet中，是个抽象方法：
 
-```
+``` java
 protected abstract void doService(HttpServletRequest request, HttpServletResponse response)
         throws Exception;
 ```
 
 DispatcherServlet中实现了该方法。
 
-```
+``` java
 @Override
 protected void doService(HttpServletRequest request, HttpServletResponse response) throws Exception {
     if (logger.isDebugEnabled()) {
@@ -195,7 +195,7 @@ protected void doService(HttpServletRequest request, HttpServletResponse respons
 
 核心逻辑其实就是调用doDispatch方法，处理请求，这个方法也是DispatcherServlet处理外部请求的核心方法。
 
-```
+``` java
 protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
     HttpServletRequest processedRequest = request;
     HandlerExecutionChain mappedHandler = null;
@@ -294,7 +294,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 
 org.springframework.web.servlet.DispatcherServlet#getHandler方法返回值类型为HandlerExecutionChain。
 
-```
+``` java
 protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
     if (this.handlerMappings != null) {
         for (HandlerMapping hm : this.handlerMappings) {
@@ -316,7 +316,7 @@ protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Ex
 
 HandlerMapping的getHandler方法，定义在HandlerMapping接口，实现在AbstractHandlerMapping抽象类中：
 
-```
+``` java
 public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
     // 1. 根据request获取Handler，如果HandlerMapping类型为RequestMappingHandlerMapping，则该方法返回值类型为HandlerMethod
     Object handler = getHandlerInternal(request);
@@ -352,7 +352,7 @@ public final HandlerExecutionChain getHandler(HttpServletRequest request) throws
 
 org.springframework.web.servlet.handler.AbstractHandlerMapping#getHandlerInternal方法，是个抽象方法，由子类实现。我们上篇文章介绍Spring MVC启动过程时介绍过，DispatcherServlet的成员变量handlerMappings，第一个元素的类型为RequestMappingHandlerMapping，所以在该类中查找getHandlerInternal，发现RequestMappingHandlerMapping对该方法的实现定义在父类AbstractHandlerMethodMapping中：
 
-```
+``` java
 protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
     // 1. 从request获取url
     String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
@@ -381,7 +381,7 @@ protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Ex
 
 可以看到getHandlerInternal方法返回值类型为HandlerMethod，对应于Controller中的某一个方法。上篇文章中也介绍过，在AbstractHandlerMethodMapping中有一个MappingRegistry类型的成员mappingRegistry，统一管理URL和HandlerMethod的映射关系，lookupHandlerMethod就是根据URL从mappingRegistry中匹配HandlerMethod。
 
-```
+``` java
 protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request) throws Exception {
     List<Match> matches = new ArrayList<>();
     // 1. 根据URL，从mappingRegistry获取匹配到的RequestMappingInfo
@@ -427,7 +427,7 @@ protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletReques
 
 上述步骤，我们根据URL获取了对应处理的HandlerMethod（某个Controller的方法），getHandler方法的最终返回结果HandlerExecutionChain，通过调用getHandlerExecutionChain方法获取。
 
-```
+``` java
 protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
     // 1. 初始化HandlerExecutionChain
     HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
@@ -464,7 +464,7 @@ protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpSer
 
 上篇文章介绍过，HandlerAdapter其实就是用于维护一些参数解析器以及返回值解析器。
 
-```
+``` java
 protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
     // 遍历handlerAdapters，返回支持当前HandlerMethod的HandlerAdapter
     if (this.handlerAdapters != null) {
@@ -486,7 +486,7 @@ getHandlerAdapter方法逻辑也比较简单，就是遍历DispatcherServlet的�
 
 DispatcherServlet成员变量handlerAdapters的初始化，上篇文章已经介绍过。我们知道，handlerAdapters第一个元素类型为RequestMappingHandlerAdapter，我们来继续跟进看一下RequestMappingHandlerAdapter的supports方法：
 
-```
+``` java
 public final boolean supports(Object handler) {
     return (handler instanceof HandlerMethod && supportsInternal((HandlerMethod) handler));
 }
@@ -503,7 +503,7 @@ protected boolean supportsInternal(HandlerMethod handlerMethod) {
 
 上面说过HandlerExecutionChain是HandlerMethod和HandlerInterceptor的集合。HandlerInterceptor接口定义如下：
 
-```
+``` java
 public interface HandlerInterceptor {
 
     default boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
@@ -533,7 +533,7 @@ public interface HandlerInterceptor {
 - applyPostHandle：执行当前请求所有拦截器的postHandle方法
 - triggerAfterCompletion：执行当前请求所有拦截器的afterCompletion方法
 
-```
+``` java
 boolean applyPreHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
     HandlerInterceptor[] interceptors = getInterceptors();
     if (!ObjectUtils.isEmpty(interceptors)) {
@@ -587,7 +587,7 @@ void triggerAfterCompletion(HttpServletRequest request, HttpServletResponse resp
 
 handle方法，定义在RequestMappingHandlerAdapter的父类AbstractHandlerMethodAdapter中。如下：
 
-```
+``` java
 public final ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
         throws Exception {
 
@@ -600,7 +600,7 @@ protected abstract ModelAndView handleInternal(HttpServletRequest request,
 
 handle方法内，直接调用了handleInternal方法，handleInternal方法在AbstractHandlerMethodAdapter中定义为抽象方法，子类RequestMappingHandlerAdapter实现了该方法：
 
-```
+``` java
 protected ModelAndView handleInternal(HttpServletRequest request,
         HttpServletResponse response, HandlerMethod handlerMethod) throws Exception {
 
@@ -641,7 +641,7 @@ protected ModelAndView handleInternal(HttpServletRequest request,
 
 可以确定，handleInternal方法，调用了invokeHandlerMethod方法来执行HandlerMethod。
 
-```
+``` java
 protected ModelAndView invokeHandlerMethod(HttpServletRequest request,
         HttpServletResponse response, HandlerMethod handlerMethod) throws Exception {
 
@@ -705,7 +705,7 @@ protected ModelAndView invokeHandlerMethod(HttpServletRequest request,
 
 继续跟一下核心流程invokeAndHandle方法：
 
-```
+``` java
 public void invokeAndHandle(ServletWebRequest webRequest, ModelAndViewContainer mavContainer,
         Object... providedArgs) throws Exception {
 
@@ -761,13 +761,13 @@ public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewC
 
 invokeAndHandle方法第2步，返回值处理：
 
-```
+``` java
 this.returnValueHandlers.handleReturnValue(returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
 ```
 
 其实也是使用RequestMappingHandlerAdapter的成员变量returnValueHandlers来处理返回值，根据返回值类型，挑选一个合适的HandlerMethodReturnValueHandler来处理返回值。
 
-```
+``` java
 public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
         ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
 
@@ -781,7 +781,7 @@ public void handleReturnValue(@Nullable Object returnValue, MethodParameter retu
 
 invokeHandlerMethod方法最后，调用了getModelAndView，封装数据和和视图，返回ModelAndView。
 
-```
+``` java
 private ModelAndView getModelAndView(ModelAndViewContainer mavContainer,
         ModelFactory modelFactory, NativeWebRequest webRequest) throws Exception {
 
@@ -811,7 +811,7 @@ private ModelAndView getModelAndView(ModelAndViewContainer mavContainer,
 
 接下来看一下doDispatch方法的最后一个关键步骤，调用processDispatchResult进行视图渲染。
 
-```
+``` java
 private void processDispatchResult(HttpServletRequest request, HttpServletResponse response,
         @Nullable HandlerExecutionChain mappedHandler, @Nullable ModelAndView mv,
         @Nullable Exception exception) throws Exception {
@@ -906,7 +906,7 @@ protected void render(ModelAndView mv, HttpServletRequest request, HttpServletRe
 
 可以看出，这里根据ModelAndView构建出一个View对象，类型为JstlView。所以接下来继续看一下JstlView的render方法。该方法定义在父类AbstractView中：
 
-```
+``` java
 public void render(@Nullable Map<String, ?> model, HttpServletRequest request,
         HttpServletResponse response) throws Exception {
 
@@ -925,7 +925,7 @@ public void render(@Nullable Map<String, ?> model, HttpServletRequest request,
 
 renderMergedOutputModel方法也定义在JstlView的父类，InternalResourceView。
 
-```
+``` java
 protected void renderMergedOutputModel(
         Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
@@ -971,6 +971,6 @@ protected void renderMergedOutputModel(
 
 > 参考链接：
 >
-> \1. SpringMVC 源码
+> 1. SpringMVC 源码
 >
-> \2. [Spring MVC官方文档](https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-servlet)
+> 2. [Spring MVC官方文档](https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-servlet)

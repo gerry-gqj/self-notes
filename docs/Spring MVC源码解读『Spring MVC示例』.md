@@ -81,7 +81,7 @@ public void calculateSalary(){
 
 于是，发明了一个叫ViewModel的东西，它可以和View层绑定。 ViewModel的变化，View立刻就会变化。拿上述薪水计算为例， ViewModel 差不多这样：
 
-```
+``` java
 public class SalaryViewModel{
     String grossSalary;  //税前收入，和View中的相关字段对应
     String netSalary;    //净收入，和View中的相关字段对应
@@ -94,7 +94,7 @@ public class SalaryViewModel{
 
 当用户在界面上点击“计算”按钮的时候， 需要设置一个SalaryViewModel中的标志位：
 
-```
+``` java
 salaryViewModel.isCalculating = true;
 ```
 
@@ -122,7 +122,7 @@ salaryViewModel.isCalculating = true;
 
 该模式下，Servlet内部的逻辑大致如下：
 
-```
+``` java
 //0. 调用Model，获取业务数据
 
 //1. 业务数据设置到HttpServletRequest中，用于向jsp传参
@@ -136,7 +136,7 @@ dispatcher.forward(request, response);
 
 Servlet中需要调用业务代码来完成特定的功能并获取结果，同时Jsp中动态输出的HTML内容是与这些结果有关的，这就需要将Servlet中的数据传递到Jsp中：
 
-```
+``` java
 request.setAttribute(name, value);
 ```
 
@@ -146,7 +146,7 @@ request.setAttribute(name, value);
 
 假如有一个博客系统，用户博客列表页面的业务逻辑就是需要查询某一用户创造的文章列表以及该用户的个人详细信息，我们建立相关的业务对象以及查询方法：
 
-```
+``` java
 public class Post {
 
     private long id;
@@ -186,7 +186,7 @@ public class User {
 
 我们用`Data`类来模拟用户以及博客列表的Dao操作：
 
-```
+``` java
 public class Data {
 
     public static List<User> users = new ArrayList<>();
@@ -219,7 +219,7 @@ public class Data {
 
 Controller由Servlet实现，它负责获取用户的输入（也就是用户名），并调用业务逻辑方法获取相关数据，然后将请求分发至指定JSP进行处理：
 
-```
+``` java
 @WebServlet("/userPosts")
 public class UserPostController extends HttpServlet {
 
@@ -242,7 +242,7 @@ public class UserPostController extends HttpServlet {
 
 在Jsp中，就可以通过`request.getAttribute("posts")`和`request.getAttribute("user")`来访问Servlet中传递来的数据了（这里只包含核心渲染逻辑代码）
 
-```
+``` html
 <% for (Post post : request.getAttribute("posts")) { %>
   <div class="blog-post">
     <h3 class="blog-post-title">
@@ -300,7 +300,7 @@ Spring MVC框架提供的工具不能100%满足你的需求，你需要定制开
 
 ### 3.1 pom.xml
 
-```
+``` xml
 <project xmlns = "http://maven.apache.org/POM/4.0.0"
          xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation = "http://maven.apache.org/POM/4.0.0
@@ -332,7 +332,7 @@ Spring MVC框架提供的工具不能100%满足你的需求，你需要定制开
 
 ### 3.2 web.xml
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -387,7 +387,7 @@ web.xml文件中，我们主要做了如下几项工作：
 
 上面的web.xml配置文件中可以看到使用了其它两个配置文件，spring.xml和spring-mvc.xml，这其实和Spring MVC父子容器有关（关于Spring MVC父子容器，我们后面再介绍）。spring.xml中主要用于声明一些Service层和DAO层的Bean，spring-mvc.xml中主要用于声明一些Controller层的Bean（原因在后面介绍）。classpath下创建spring.xml配置文件：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -411,7 +411,7 @@ web.xml文件中，我们主要做了如下几项工作：
 
 ### 3.4 spring-mvc.xml
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -462,7 +462,7 @@ web.xml文件中，我们主要做了如下几项工作：
 
 ### 3.5 Jsp文件
 
-```
+``` html
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
   <head>
@@ -476,7 +476,7 @@ web.xml文件中，我们主要做了如下几项工作：
 
 ### 3.6 HelloController
 
-```
+``` java
 @Controller
 @RequestMapping("/demo")
 public class HelloController {
@@ -508,8 +508,8 @@ public class HelloController {
 
 > 参考链接：
 >
-> \1. 《码农翻身——什么是MVC》
+> 1. 《码农翻身——什么是MVC》
 >
-> \2. [JSP/Servlet——MVC设计模式](https://www.tianmaying.com/tutorial/jsp-servlet-mvc-architecture)
+> 2. [JSP/Servlet——MVC设计模式](https://www.tianmaying.com/tutorial/jsp-servlet-mvc-architecture)
 >
-> \3. [Spring与后端模板引擎的故事](https://cloud.tencent.com/developer/article/1488092)
+> 3. [Spring与后端模板引擎的故事](https://cloud.tencent.com/developer/article/1488092)

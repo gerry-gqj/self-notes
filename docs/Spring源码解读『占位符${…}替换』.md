@@ -6,7 +6,7 @@
 
 在xml配置中，通过${…}：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -29,7 +29,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd http://www.spri
 
 在java config中，通过@Value(“${…}”)：
 
-```
+``` java
 @Configuration
 public class MyConfiguration {
 
@@ -55,7 +55,7 @@ Spring处理以上两种占位符的替换采用不同的方式，**xml注入的
 
 一般我们使用xml注入会在spring配置文件中注明.properties文件的位置，一般我们会添加如下配置：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -80,7 +80,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd http://www.spri
 
 或者添加如下配置：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -109,7 +109,7 @@ http://www.springframework.org/schema/beans/spring-beans-4.1.xsd http://www.spri
 
 引入该配置，其实就是显式的声明一个PropertySourcesPlaceholderConfigurer实体bean，跟上述方式一致。
 
-```
+``` java
 public class SpringPropertyTest {
     public static void main(String[] args) {
         AbstractApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
@@ -131,7 +131,7 @@ public class SpringPropertyTest {
 
 ### 2.1 postProcessBeanFactory
 
-```
+``` java
 @Override
 public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 	if (this.propertySources == null) {
@@ -169,7 +169,7 @@ public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) 
 
 ### 2.2 org.springframework.core.io.support.PropertiesLoaderSupport#mergeProperties
 
-```
+``` java
 protected Properties mergeProperties() throws IOException {
 	Properties result = new Properties();
 
@@ -221,7 +221,7 @@ protected void loadProperties(Properties props) throws IOException {
 
 ### 2.3 processProperties
 
-```
+``` java
 protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
 		final ConfigurablePropertyResolver propertyResolver) throws BeansException {
 
@@ -250,7 +250,7 @@ protected void processProperties(ConfigurableListableBeanFactory beanFactoryToPr
 
 ### 2.4 doProcessProperties
 
-```
+``` java
 protected void doProcessProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
 		StringValueResolver valueResolver) {
 
@@ -283,7 +283,7 @@ protected void doProcessProperties(ConfigurableListableBeanFactory beanFactoryTo
 
 ### 2.5 visitBeanDefinition
 
-```
+``` java
 public void visitBeanDefinition(BeanDefinition beanDefinition) {
 	// 替换BeanDefinition parentName属性
 	visitParentName(beanDefinition);
@@ -308,7 +308,7 @@ public void visitBeanDefinition(BeanDefinition beanDefinition) {
 
 ### 2.6 visitPropertyValues
 
-```
+``` java
 // 参数pvs为BeanDefinition所有的property，有可能存在占位符，也有可能存在真正的值
 protected void visitPropertyValues(MutablePropertyValues pvs) {
 	PropertyValue[] pvArray = pvs.getPropertyValues();
@@ -324,7 +324,7 @@ protected void visitPropertyValues(MutablePropertyValues pvs) {
 
 ### 2.7 resolveValue
 
-```
+``` java
 protected Object resolveValue(Object value) {
 	if (value instanceof BeanDefinition) {
 		visitBeanDefinition((BeanDefinition) value);
@@ -375,7 +375,7 @@ protected Object resolveValue(Object value) {
 
 这里我们来看String类型占位符的解析逻辑，会调用resolveStringValue。
 
-```
+``` java
 protected String resolveStringValue(String strVal) {
 	if (this.valueResolver == null) {
 		throw new IllegalStateException("No StringValueResolver specified - pass a resolver " +
@@ -389,7 +389,7 @@ protected String resolveStringValue(String strVal) {
 
 这里我们重点看一下这里的valueResolver是什么时候初始化的，其实就是上面的processProperties方法中：
 
-```
+``` java
 StringValueResolver valueResolver = new StringValueResolver() {
 		@Override
 		public String resolveStringValue(String strVal) {
@@ -410,7 +410,7 @@ StringValueResolver valueResolver = new StringValueResolver() {
 
 resolveRequiredPlaceholders方法最终会调用到AbstractPropertyResolver类的resolveRequiredPlaceholders方法。
 
-```
+``` java
 public String resolveRequiredPlaceholders(String text) throws IllegalArgumentException {
     if (this.strictHelper == null) {
         this.strictHelper = createPlaceholderHelper(false);
@@ -439,7 +439,7 @@ protected abstract String getPropertyAsRawString(String key);
 
 ### 2.9 replacePlaceholders
 
-```
+``` java
 public String replacePlaceholders(String value, PlaceholderResolver placeholderResolver) {
     Assert.notNull(value, "'value' must not be null");
     return parseStringValue(value, placeholderResolver, new HashSet<>());
@@ -448,7 +448,7 @@ public String replacePlaceholders(String value, PlaceholderResolver placeholderR
 
 这里我们重点关注一下参数placeholderResolver，该参数在doResolvePlaceholders方法中引入函数表达式作为参数（this::getPropertyAsRawString）。
 
-```
+``` java
 protected String parseStringValue(
         String value, PlaceholderResolver placeholderResolver, Set<String> visitedPlaceholders) {
 
@@ -513,7 +513,7 @@ protected String parseStringValue(
 
 ### 2.10 getPropertyAsRawString
 
-```
+``` java
 protected String getPropertyAsRawString(String key) {
     return getProperty(key, String.class, false);
 }
@@ -551,6 +551,6 @@ protected <T> T getProperty(String key, Class<T> targetValueType, boolean resolv
 
 > 参考链接：
 >
-> \1. Spring源码
+> 1. Spring源码
 >
-> \2. [占位符替换过程-xml配置的参数](https://blog.csdn.net/qq_28580959/article/details/53926874)
+> 2. [占位符替换过程-xml配置的参数](https://blog.csdn.net/qq_28580959/article/details/53926874)

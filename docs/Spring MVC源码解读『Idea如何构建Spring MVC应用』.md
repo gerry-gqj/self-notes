@@ -42,7 +42,7 @@
 
 spring.xml配置如下：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -66,7 +66,7 @@ spring.xml配置如下：
 
 spring-mvc.xml配置如下：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -117,7 +117,7 @@ spring-mvc.xml配置如下：
 
 最后我们需要配置一下“web/WEB-INF/”下的web.xml，并创建jsp文件：
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -203,7 +203,7 @@ spring-mvc.xml配置如下：
 
 停止Tomcat也比较简单，直接在bin目录下执行脚本”./catalina.sh stop”即可。或者通过brew安装的，也可以直接运行以下命令：
 
-```
+``` shell
 brew services start tomcat
 brew services stop tomcat
 ```
@@ -221,14 +221,14 @@ brew services stop tomcat
 
 首先我们在创建一个文件夹，用于存储tomcat实例：
 
-```
+``` shell
 cd ~
 mkdir tomcat_instance
 ```
 
 然后创建一个目录，用于存放我们从本地CATALINA_HOME中拷贝过去的Tomcat信息：
 
-```
+``` shell
 cd tomcat_instance
 mkdir tomcat0
 cd tomcat0
@@ -237,7 +237,7 @@ cp -a /usr/local/Cellar/tomcat/9.0.41/libexec/* ./
 
 也就是说我们将CATALINA_HOME目录下的全部数据都拷贝到了”~/tomcat_instance/tomcat0″目录下，那么直接通过该目录下bin中的脚本启动的话，”~/tomcat_instance/tomcat0″其实就是一个CATALINA_HOME。我们可以通过这种方式，在一台机器中启动很多个tomcat，各个tomcat实例之间完全独立，有各自的CATALINA_HOME和CATALINA_BASE（有一点需要注意，同时启动多个时，需要修改server.xml中Connector的端口配置，不然会出现端口冲突）。
 
-```
+``` shell
 cd ~/tomcat_instance/tomcat0/bin
 ./catalina.sh start
 ```
@@ -250,7 +250,7 @@ cd ~/tomcat_instance/tomcat0/bin
 
 **多实例共用CATALINA_HOME，其实就是共用CATALINA_HOME目录下的bin和lib文件夹**，通过这种方式启动的多个tomcat实例，CATALINA_HOME是一样的，但是CATALINA_BASE各不相同。
 
-```
+``` shell
 cd ~/tomcat_instance
 mkdir tomcat1
 cd tomcat1
@@ -258,7 +258,7 @@ cd tomcat1
 
 将我们Tomcat安装目录中的conf文件夹直接拷贝过来，并创建一些本tomcat实例工作需要的一些新文件夹：
 
-```
+``` shell
 cp -a /usr/local/Cellar/tomcat/9.0.41/libexec/conf ./
 mkdir logs webapps work temp
 ```
@@ -269,7 +269,7 @@ mkdir logs webapps work temp
 
 接着我们在webapps目录创建我们当前tomcat实例的应用：
 
-```
+``` shell
 cd ~/tomcat_instance/tomcat1/webapps
 mkdir ROOT
 cd ROOT
@@ -304,7 +304,7 @@ vi index.jsp
 
 在”~/tomcat_instance/tomcat1″工作目录下，创建启动暂停脚本：
 
-```
+``` shell
 cd ~/tomcat_instance/tomcat1
 vi start_tomcat1.sh
 
@@ -327,7 +327,7 @@ cd ${CATALINA_HOME}
 
 赋予如上两脚本执行权限：
 
-```
+``` shell
 chmod 777 start_tomcat1.sh stop_tomcat1.sh
 ```
 
@@ -347,7 +347,7 @@ chmod 777 start_tomcat1.sh stop_tomcat1.sh
 
 比如我们在桌面上创建一个myapp1文件夹，文件夹下放一个jsp文件index.jsp。
 
-```
+``` html
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
   <head>
@@ -361,7 +361,7 @@ chmod 777 start_tomcat1.sh stop_tomcat1.sh
 
 然后我们在我们的CATALINA_BASE/conf/Catalina/localhost文件夹下创建一个xml文件ROOT.xml。
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Context docBase="/Users/chenhao/Desktop/myapp1"/>
 ```
@@ -374,7 +374,7 @@ chmod 777 start_tomcat1.sh stop_tomcat1.sh
 
 如果我们在桌面上再起一个应用myapp2，文件夹下放一个jsp文件index.jsp
 
-```
+``` html
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
   <head>
@@ -388,7 +388,7 @@ chmod 777 start_tomcat1.sh stop_tomcat1.sh
 
 并且我们希望可以通过”http://localhost:8080/myapp2″访问到它，那么虚拟目录该如何配置？我们可以在CATALINA_BASE/conf/Catalina/localhost文件夹下再创建一个xml文件myapp2.xml。
 
-```
+``` xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Context docBase="/Users/chenhao/Desktop/myapp2"/>
 ```
