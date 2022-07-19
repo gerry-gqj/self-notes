@@ -866,6 +866,325 @@ public class HelloController {
 
 
 
+## 5、Riboon负载均衡
+
+Eurake默认使用Riboon对RestTemplate做了负载均衡(轮询规则)
+
+自定义负载均衡规则
+
+> 注意: 此包不能和主启动类在同一个包路径下
+
+```java
+
+@Configuration
+public class MySelfRule {
+    @Bean
+    public IRule myRule() {
+        return new RandomRule();//定义为随机
+    }
+}
+```
+
+
+
+主启功类
+
+```java
+@EnableEurekaClient
+@SpringBootApplication
+@RibbonClient(name = "CLOUD-PAYMENT-SERVICE",configuration= MySelfRule.class)
+public class OrderMain80 {
+    public static void main(String[] args) {
+        SpringApplication.run(OrderMain80.class,args);
+    }
+}
+```
+
+
+
+RestTemplate实例
+
+```java
+@Configuration
+public class RestTemplateConfig {
+    @Bean
+    @LoadBalanced
+    public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder){
+        return restTemplateBuilder.rootUri("http://CLOUD-PAYMENT-SERVICE").build();
+    }
+}
+```
+
+
+
+
+
+### 自定义实现负载均衡（轮询）
+
+使用cps和回旋锁实现
+
+顶层接口-只有一个方法(获取服务实例)
+
+```java
+public interface LoadBalancer{
+    ServiceInstance instances(List<ServiceInstance> serviceInstances);
+}
+```
+
+实现类 
+
+```java
+@Component
+public class MyLB implements LoadBalancer{
+
+    private AtomicInteger atomicInteger = new AtomicInteger(0);
+
+    public final int getAndIncrement(){
+        int current;
+        int next;
+        do {
+            current = this.atomicInteger.get();
+            next = current >= 2147483647 ? 0 : current + 1;
+        }while(!this.atomicInteger.compareAndSet(current,next));
+        System.out.println("*****第几次访问，次数next: "+next);
+        return next;
+    }
+
+    //负载均衡算法：rest接口第几次请求数 % 服务器集群总数量 = 实际调用服务器位置下标  ，每次服务重启动后rest接口计数从1开始。
+    @Override
+    public ServiceInstance instances(List<ServiceInstance> serviceInstances){
+        int index = getAndIncrement() % serviceInstances.size();
+
+        return serviceInstances.get(index);
+    }
+}
+
+```
+
+
+
+```java
+@Configuration
+public class RestTemplateConfig {
+    @Bean
+    //@LoadBalanced
+    public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder){
+        return restTemplateBuilder.build();
+    }
+}
+```
+
+
+
+Controller
+
+```java
+@RestController
+@Slf4j
+public class OrderController{
+    //public static final String PAYMENT_URL = "http://localhost:8001";
+
+    public static final String PAYMENT_URL = "http://CLOUD-PAYMENT-SERVICE";
+
+    @Resource
+    private RestTemplate restTemplate;
+
+    @Resource
+    private LoadBalancer loadBalancer;
+    
+    @Resource
+    private DiscoveryClient discoveryClient;
+
+    @GetMapping(value = "/consumer/payment/lb")
+    public String getPaymentLB()
+    {
+        List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PAYMENT-SERVICE");
+
+        if(instances == null || instances.size() <= 0)
+        {
+            return null;
+        }
+
+        ServiceInstance serviceInstance = loadBalancer.instances(instances);
+        URI uri = serviceInstance.getUri();
+
+        return restTemplate.getForObject(uri+"/payment/lb",String.class);
+
+    }
+  
+}
+```
+
+
+
+## 6、Openfeign服务调用(面向消费者)
+
+依赖
+
+```xml
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <!--eureka client-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <!-- 引入自己定义的api通用包，可以使用Payment支付Entity -->
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>cloud-api-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!--web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+
+
+```java
+@SpringBootApplication
+@EnableFeignClients
+public class OrderFeignMain80 {
+    public static void main(String[] args) {
+        SpringApplication.run(OrderFeignMain80.class, args);
+    }
+}
+```
+
+```yaml
+server:
+  port: 80
+
+spring:
+  application:
+    name: cloud-order-sevice
+
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer默认为true。
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    fetchRegistry: true
+    service-url:
+      #单机
+      #defaultZone: http://localhost:7001/eureka
+      # 集群
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
+      
+#设置feign客户端超时时间(OpenFeign默认支持ribbon)
+ribbon:
+  #指的是建立连接所用的时间，适用于网络状况正常的情况下,两端连接所用的时间
+  ReadTimeout: 5000
+  #指的是建立连接后从服务器读取到可用资源所用的时间
+  ConnectTimeout: 5000
+      
+```
+
+
+
+```java
+@Service
+@FeignClient(value = "CLOUD-PAYMENT-SERVICE")
+public interface PaymentFeignService {
+
+    @GetMapping(value = "/hello")
+    CommonResult<Payment> hello();
+
+    @GetMapping(value = "/payment/feign/timeout")
+    String paymentFeignTimeout();
+}
+```
+
+
+
+```java
+@RestController
+public class HelloController {
+
+    @Resource
+    private PaymentFeignService paymentFeignService;
+
+    @Value("${server.port}")
+    private String port;
+
+    @GetMapping("hello")
+    public CommonResult<Payment> hello(){
+        return paymentFeignService.hello();
+    }
+}
+```
+
+
+
+开启日志
+
+```java
+@Configuration
+public class FeignConfig {
+    @Bean
+    Logger.Level feignLoggerLevel() {
+        return Logger.Level.FULL;
+    }
+}
+```
+
+```yaml
+server:
+  port: 80
+
+spring:
+  application:
+    name: cloud-order-sevice
+#  zipkin:
+#    base-url: http://localhost:9411
+#  sleuth:
+#    sampler:
+#      probability: 1
+
+
+
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer默认为true。
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    fetchRegistry: true
+    service-url:
+      #单机
+      #defaultZone: http://localhost:7001/eureka
+      # 集群
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
+
+#设置feign客户端超时时间(OpenFeign默认支持ribbon)
+ribbon:
+  #指的是建立连接所用的时间，适用于网络状况正常的情况下,两端连接所用的时间
+  ReadTimeout: 5000
+  #指的是建立连接后从服务器读取到可用资源所用的时间
+  ConnectTimeout: 5000
+
+#开启feign日志
+logging:
+  level:
+    com.qibria.cloud.service.PaymentFeignService: debug
+```
+
+
+
+
+
+
+
 
 
 
