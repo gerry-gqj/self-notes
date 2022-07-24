@@ -2,6 +2,10 @@
 
 
 
+![image-20220720163007385](SpringCloud.assets/image-20220720163007385.png)
+
+
+
 ## 依赖管理
 
 ```xml
@@ -1181,41 +1185,1132 @@ logging:
 
 
 
+## 7、Hystrix 服务熔断、降级、限流
+
+```xml
+    <dependencies>
+        <!--openfeign-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <!--hystrix-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+        </dependency>
+        <!--eureka client-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <!-- 引入自己定义的api通用包，可以使用Payment支付Entity -->
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>cloud-api-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!--web-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+
+
+### 服务降级
+
+服务端降级
+
+```java
+@SpringBootApplication
+@EnableEurekaClient
+//@EnableHystrix 包含 @EnableCircuitBreaker
+@EnableCircuitBreaker
+public class PaymentHystrixMain8001 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentHystrixMain8001.class, args);
+    }
+}
+```
+
+
+
+```yaml
+server:
+  port: 8001
+
+
+spring:
+  application:
+    name: cloud-provider-hystrix-payment
+
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer默认为true。
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    fetchRegistry: true
+    service-url:
+      #单机版
+      #defaultZone: http://127.0.0.1:7001/eureka
+      # 集群版
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka
+      #defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: hystrix_payment8001
+    #访问路径可以显示IP地址
+    prefer-ip-address: true
+    #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+    #lease-renewal-interval-in-seconds: 1
+    #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+    #lease-expiration-duration-in-seconds: 2
+
+```
+
+
+
+```java
+package com.qibria.cloud.service;
+
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class PaymentService {
+
+    /**
+     * 正常访问，肯定OK
+     * @param id
+     * @return
+     */
+    public String paymentInfo_OK(Integer id) {
+        return "线程池:  "+Thread.currentThread().getName()+"  paymentInfo_OK,id:  "+id+"\t"+"O(∩_∩)O哈哈~";
+    }
+
+
+    @HystrixCommand(
+            fallbackMethod = "paymentInfo_TimeOut_Handler",
+            commandProperties = {
+                @HystrixProperty(name="execution.isolation.thread.timeoutInMilliseconds",value="3000")})
+    public String paymentInfo_TimeOut(Integer id) {
+
+        //int age = 10/0;
+        int timeNum = 5;
+        try {
+            TimeUnit.SECONDS.sleep(timeNum);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "线程池:  "+Thread.currentThread().getName()+
+            "  paymentInfo_TimeOut,id:  "+id+"\t"+"O(∩_∩)O哈哈~"+"\t耗时(秒):"+timeNum;
+    }
+
+
+    public String paymentInfo_TimeOut_Handler(Integer id){
+        return "线程池:  "+Thread.currentThread().getName()+"  8001系统繁忙或者运行报错，请稍后再试,id:  "+id+"\t"+"o(╥﹏╥)o";
+    }
+
+}
+```
+
+
+
+```java
+@RestController
+public class PaymentController {
+
+    private final Logger log = LoggerFactory.getLogger(PaymentController.class);
+
+    @Resource
+    private PaymentService paymentService;
+
+    @Value("${server.port}")
+    private String port;
+
+
+    @GetMapping("/payment/hystrix/ok/{id}")
+    public String paymentInfo_OK(@PathVariable("id") Integer id) {
+        String result = paymentService.paymentInfo_OK(id);
+        log.info("*****result: "+result);
+        return result;
+    }
+
+    @GetMapping("/payment/hystrix/timeout/{id}")
+    public String paymentInfo_TimeOut(@PathVariable("id") Integer id) {
+        String result = paymentService.paymentInfo_TimeOut(id);
+        log.info("*****result: "+result);
+        return result;
+    }
+
+}
+```
+
+
+
+客户端降级
+
+```java
+@SpringBootApplication
+@EnableFeignClients
+@EnableHystrix //开启Hystrix
+public class OrderHystrixMain80 {
+    public static void main(String[] args) {
+        SpringApplication.run(OrderHystrixMain80.class,args);
+    }
+}
+
+```
+
+```yaml
+server:
+  port: 80
+
+
+spring:
+  application:
+    name: cloud-comsumer-hystrix-order
+
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer默认为true。
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    fetchRegistry: true
+    service-url:
+      #单机版
+      #defaultZone: http://127.0.0.1:7001/eureka
+      # 集群版
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka
+      #defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: hystrix_order80
+    #访问路径可以显示IP地址
+    prefer-ip-address: true
+    #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+    #lease-renewal-interval-in-seconds: 1
+    #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+    #lease-expiration-duration-in-seconds: 2
+#设置feign客户端超时时间(OpenFeign默认支持ribbon)
+ribbon:
+  #指的是建立连接所用的时间，适用于网络状况正常的情况下,两端连接所用的时间
+  ReadTimeout: 5000
+  #指的是建立连接后从服务器读取到可用资源所用的时间
+  ConnectTimeout: 5000
+
+#开启hystrix服务
+feign:
+  hystrix:
+    enabled: true
+```
+
+
+
+```java
+@Component
+//使用openfeign统一进行服务降级 PaymentFallbackService.class
+@FeignClient(value = "CLOUD-PROVIDER-HYSTRIX-PAYMENT" ,fallback = PaymentFallbackService.class)
+public interface PaymentHystrixService {
+
+    @GetMapping("/payment/hystrix/ok/{id}")
+    public String paymentInfo_OK(@PathVariable("id") Integer id);
+
+    @GetMapping("/payment/hystrix/timeout/{id}")
+    public String paymentInfo_TimeOut(@PathVariable("id") Integer id);
+
+}
+
+```
+
+
+
+实现类
+
+```java
+@Component
+public class PaymentFallbackService implements PaymentHystrixService {
+
+    @Override
+    public String paymentInfo_OK(Integer id) {
+        return "-----PaymentFallbackService fall back-paymentInfo_OK ,o(╥﹏╥)o";
+    }
+
+    @Override
+    public String paymentInfo_TimeOut(Integer id) {
+        return "-----PaymentFallbackService fall back-paymentInfo_TimeOut ,o(╥﹏╥)o";
+    }
+}
+```
+
+
+
+```java
+@RestController
+@DefaultProperties(defaultFallback = "payment_Global_FallbackMethod") 
+//全局服务降级, 如果下面没有设置 @HystrixCommand的commandProperties属性, 就会对持有@HystrixCommand的方法进行服务降级
+public class OrderHystrixController {
+
+    @Resource
+    private PaymentHystrixService paymentHystrixService;
+
+    @GetMapping("/consumer/payment/hystrix/ok/{id}")
+    public String paymentInfo_OK(@PathVariable("id") Integer id){
+        String result = paymentHystrixService.paymentInfo_OK(id);
+        return result;
+    }
+
+   @GetMapping("/consumer/payment/hystrix/timeout/{id}")
+//    @HystrixCommand(fallbackMethod = "paymentTimeOutFallbackMethod",commandProperties = {
+//            @HystrixProperty(name="execution.isolation.thread.timeoutInMilliseconds",value="1500")
+//    })
+    @HystrixCommand
+    public String paymentInfo_TimeOut(@PathVariable("id") Integer id) {
+        //int age = 10/0;  //模拟错误发生, 引发服务降级
+        String result = paymentHystrixService.paymentInfo_TimeOut(id);
+        return result;
+    }
+
+    public String paymentTimeOutFallbackMethod(@PathVariable("id") Integer id) {
+        return "我是消费者80,对方支付系统繁忙请10秒钟后再试或者自己运行出错请检查自己,o(╥﹏╥)o";
+    }
+
+    // 下面是全局fallback方法
+    public String payment_Global_FallbackMethod() {
+        return "Global异常处理信息，请稍后再试，/(ㄒoㄒ)/~~";
+    }
+
+}
+```
+
+
+
+### 服务熔断
+
+
+
+```java
+
+@Service
+public class PaymentService {
+
+    //=====服务熔断=============================
+    @HystrixCommand(fallbackMethod = "paymentCircuitBreaker_fallback",commandProperties = {
+            @HystrixProperty(name = "circuitBreaker.enabled",value = "true"),// 是否开启断路器
+            @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold",value = "10"),// 请求次数
+            @HystrixProperty(name = "circuitBreaker.sleepWindowInMilliseconds",value = "10000"), // 时间窗口期
+            @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage",value = "60"),// 失败率达到多少后跳闸
+    })
+    public String paymentCircuitBreaker(@PathVariable("id") Integer id) {
+
+        if(id < 0) {
+            throw new RuntimeException("******id 不能负数");
+        }
+        String serialNumber = UUID.randomUUID().toString();
+
+        return Thread.currentThread().getName()+"\t"+"调用成功，流水号: " + serialNumber;
+    }
+ 
+    public String paymentCircuitBreaker_fallback(@PathVariable("id") Integer id) {
+        return "id 不能负数，请稍后再试，/(ㄒoㄒ)/~~   id: " +id;
+    }
+
+}
+
+```
+
+
+
+```java
+    //====服务熔断
+    @GetMapping("/payment/circuit/{id}")
+    public String paymentCircuitBreaker(@PathVariable("id") Integer id)
+    {
+        String result = paymentService.paymentCircuitBreaker(id);
+        log.info("****result: "+result);
+        return result;
+    }
+```
+
+
+
+### 服务面板
+
+```xml
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-hystrix-dashboard</artifactId>
+        </dependency>
+```
+
+
+
+## 8、Gateway服务网关
+
+```xml
+    <dependencies>
+        <!--gateway-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!--eureka-client-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <!-- 引入自己定义的api通用包，可以使用Payment支付Entity -->
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>cloud-api-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+```
+
+
+
+```java
+@SpringBootApplication
+public class GateWayMain9527 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(GateWayMain9527.class, args);
+    }
+}
+```
+
+
+
+```yaml
+server:
+  port: 9527
+
+spring:
+  application:
+    name: cloud-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          #route-id-prefix: payment_provider
+      routes:
+        - id: payment_routh #payment_route    #路由的ID，没有固定规则但要求唯一，建议配合服务名
+          #uri: http://localhost:8001          #匹配后提供服务的路由地址
+          uri: lb://cloud-payment-service #匹配后提供服务的路由地址
+          predicates:
+            #- Path=/payment/get/**         # 断言，路径相匹配的进行路由
+            - Path=/**         # 断言，路径相匹配的进行路由
+
+        - id: payment_routh2 #payment_route    #路由的ID，没有固定规则但要求唯一，建议配合服务名
+          #uri: http://localhost:8001          #匹配后提供服务的路由地址
+          uri: lb://cloud-payment-service #匹配后提供服务的路由地址
+          predicates:
+            - Path=/payment/lb/**         # 断言，路径相匹配的进行路由
+            #- After=2020-02-21T15:51:37.485+08:00[Asia/Shanghai]
+            #- Cookie=username,zzyy
+            #- Header=X-Request-Id, \d+  # 请求头要有X-Request-Id属性并且值为整数的正则表达式
+
+eureka:
+  instance:
+    hostname: cloud-gateway-service
+    instance-id: cloud-gateway-service9527
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetchRegistry: true
+    service-url:
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
+
+```
+
+
+
+上面用配置方式配置网关路由断言映射，也可以使用编码方式配置
+
+```java
+@Configuration
+public class GateWayConfig{
+    @Bean
+    public RouteLocator customRouteLocator(RouteLocatorBuilder routeLocatorBuilder)    {
+        RouteLocatorBuilder.Builder routes = routeLocatorBuilder.routes();
+
+        routes.route("path_route_atguigu",
+                r -> r.path("/guonei")
+                        .uri("http://news.baidu.com/guonei")).build();
+
+        return routes.build();
+    }
+}
+```
+
+
+
+### 网关过滤器
+
+全局过滤器、独立过滤器、自定义过滤器
+
+
+
+自定义过滤器
+
+```java
+package com.qibria.cloud.filter;
+
+import com.cloud.vo.CommonResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+@Component
+public class MyGateWayLogFilter implements GlobalFilter, Ordered {
+
+    private final Logger logger = LoggerFactory.getLogger(MyGateWayLogFilter.class);
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        logger.info("--> start time: [{}]",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+
+        MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
+        queryParams.forEach((k, v) -> logger.info("key: {} || value: {}",k,v));
+
+        String id = exchange.getRequest().getQueryParams().getFirst("id");
+        if (id == null) {
+            logger.error("请求参数id为空, 非法用户༼ つ ◕_◕ ༽つ");
+            logger.info("<-- end time: [{}]",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            //自定义返回封装对象
+            CommonResult<String> data = new CommonResult<>(400,"请求参数id为空, 非法用户༼ つ ◕_◕ ༽つ",null);
+            ServerHttpResponse response = exchange.getResponse();
+            DataBuffer wrap = response.bufferFactory().wrap(data.toString().getBytes());
+            response.setStatusCode(HttpStatus.BAD_GATEWAY);
+            return response.writeWith(Mono.just(wrap));
+        }
+        logger.info("<-- end time: [{}]",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+}
+
+```
+
+
+
+## 9、Config配置中心
+
+
+
+**ssh配置(已弃用)**
+
+如果报如下错误`reject HostKey: github.com`
+原因：同一台电脑使用过两次公钥。
+需要确认一下`ssh -T git@github.com`。回车yes
+
+如果报的错误是`Auth fail`
+原因：公钥不对。问题如果本地测试可以连接成功，springcloud连接失败，则是生成的问题。
+原来的生成方式：`ssh-keygen -t rsa -C "yourname@your.com"`
+改为：`ssh-keygen -m PEM -t rsa -b 4096 -C "yourname@your.com"`
+
+**使用ed25515(github推荐使用的ssh连接方案，但是springcloud不支持)** 
+
+
+
+**使用ecdrsa(最终解决方案)** 
+
+>如果都用不了的可是使用https连接方案
+
+use ecdsa:
+
+Get the hostKey
+
+```bash
+ssh-keyscan -t ecdsa github.com
+# github.com:22 SSH-2.0-babeld-4f04c79d
+github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+```
+
+Generate a new key
+
+```css
+ssh-keygen -t ecdsa -b 256 -m PEM
+```
+
+
+
+ssh配置文件
+
+~/.ssh/config
+
+```txt
+# github
+Host github.com
+HostName github.com
+PreferredAuthentications publickey
+IdentityFile ~/.ssh/id_ecdsa
+```
 
 
 
 
 
+### 配置中心服务端配置
+
+```xml
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+
+
+启动类
+
+```java
+@SpringBootApplication
+@EnableConfigServer
+public class ConfigCenterMain3344 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigCenterMain3344.class, args);
+    }
+}
+```
+
+
+
+配置文件
+
+```yaml
+server:
+  port: 3344
+
+spring:
+  application:
+    name: cloud-config-center
+  cloud:
+    config:
+      server:
+        git:
+          uri: git@github.com:gerry-gqj/springcloud-config.git  #git仓库名字 git@github.com:zzyybs/springcloud-config.git
+          search-paths:
+            - springcloud-config # 配置文件路径
+      label: master # 分支名
+
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer默认为true。
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    fetchRegistry: true
+    service-url:
+      #单机版
+      #defaultZone: http://127.0.0.1:7001/eureka
+      # 集群版
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka
+      #defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: config-center3344
+    #访问路径可以显示IP地址
+    prefer-ip-address: true
+    #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+    #lease-renewal-interval-in-seconds: 1
+    #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+    #lease-expiration-duration-in-seconds: 2
+```
+
+
+
+**服务端访问路径**
+
+> ${hostname}:{server.port}/${branch}/${filename}
+
+> 127.0.0.1:3344/master/config-dev.yaml
+
+
+
+### 配置中心客户端配置
+
+```xml
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+
+
+主启动类
+
+```java
+@EnableEurekaClient
+@SpringBootApplication
+public class ConfigClientMain3355 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigClientMain3355.class, args);
+    }
+}
+```
+
+
+
+配置文件
+
+boostrap.yaml
+
+```yaml
+server:
+  port: 3355
+
+spring:
+  application:
+    name: config-client
+  cloud:
+    #Config客户端配置
+    config:
+      label: master #分支名称
+      name: config #配置文件名称
+      profile: dev #读取后缀名称   上述3个综合：master分支上config-dev.yml的配置文件被读取http://config-3344.com:3344/master/config-dev.yml
+      uri: http://127.0.0.1:3344 #配置中心地址k
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
+  instance:
+    prefer-ip-address: true
+    instance-id: config-clent3355
+
+```
+
+
+
+controller
+
+```java
+@RestController
+public class ConfigClientController {
+
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/info")
+    public String configInfo(){
+        return configInfo;
+    }
+}
+```
+
+
+
+访问路径
+
+> 127.0.0.1:3355/info
+
+
+
+### 配置文件动态仓库刷新（有缺陷）
+
+依赖于actuator监控中心post请求刷新,  不能自动刷新
+
+**客户端修改**
+
+配置文件添加
+
+```yaml
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+```
+
+
+
+@RefreshScope 注解在Controller上
+
+```java
+@RestController
+@RefreshScope
+public class ConfigClientController {
+
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/info")
+    public String configInfo(){
+        return configInfo;
+    }
+}
+```
+
+
+
+此时还不能自动刷新
+
+通过actuator监控器实现手动刷新（可以不用重启服务器，可以说时另类的自动刷新手段，后续自动刷新工作由bus消息总线完成）
+
+发送请求(post)
+
+> POST http://127.0.0.1:3355/actuator/refresh
+
+> GET http://127.0.0.1:3355/info
+
+下一章使用消息总线解决定点刷新
 
 
 
 
 
+##  10、Bus消息总线
 
 
 
 
 
+配置中心服务端依赖
+
+```xml
+        <!--添加消息总线RabbitMQ支持-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+配置中心客户端依赖
+
+```xml
+         <!--添加消息总线RabbitMQ支持-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+        </dependency>
+		<dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
 
 
 
+### 全局通知
+
+**服务端配置**
+
+```java
+@SpringBootApplication
+@EnableConfigServer
+public class ConfigCenterMain3344{
+    
+    public static void main(String[] args) {
+            SpringApplication.run(ConfigCenterMain3344.class, args);
+    }
+}
+```
+
+```yaml
+server:
+  port: 3344
+
+spring:
+  application:
+    name: cloud-config-center
+  cloud:
+    config:
+      server:
+        git:
+          uri: git@github.com:gerry-gqj/springcloud-config.git  #git仓库名字 git@github.com:zzyybs/springcloud-config.git
+          search-paths:
+            - springcloud-config # 配置文件路径
+      label: master # 分支名
+  rabbitmq:
+    host: 192.168.1.7
+    port: 5672
+    password: 1
+    username: rabboy
+
+##rabbitmq相关配置,暴露bus刷新配置的端点
+management:
+  endpoints: #暴露bus刷新配置的端点
+    web:
+      exposure:
+        include: 'bus-refresh'
+
+eureka:
+  client:
+    #表示是否将自己注册进EurekaServer默认为true。
+    register-with-eureka: true
+    #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    fetchRegistry: true
+    service-url:
+      #单机版
+      #defaultZone: http://127.0.0.1:7001/eureka
+      # 集群版
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka
+      #defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: config-center3344
+    #访问路径可以显示IP地址
+    prefer-ip-address: true
+    #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+    #lease-renewal-interval-in-seconds: 1
+    #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+    #lease-expiration-duration-in-seconds: 2
+```
+
+客户端配置
+
+```java
+@EnableEurekaClient
+@SpringBootApplication
+public class ConfigClientMain3355 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigClientMain3355.class, args);
+    }
+}
+```
 
 
 
+bootstrap.yaml
+
+```yaml
+# bootstrap.yaml
+
+server:
+  port: 3355
+
+spring:
+  application:
+    name: config-client
+  cloud:
+    #Config客户端配置
+    config:
+      label: master #分支名称
+      name: config #配置文件名称
+      profile: dev #读取后缀名称   上述3个综合：master分支上config-dev.yml的配置文件被读取http://config-3344.com:3344/master/config-dev.yml
+      uri: http://127.0.0.1:3344 #配置中心地址k
+  rabbitmq:
+    host: 192.168.1.7
+    port: 5672
+    username: rabboy
+    password: 1
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
+  instance:
+    prefer-ip-address: true
+    instance-id: config-clent3355
+```
 
 
 
+```java
+@RestController
+@RefreshScope //用于动态刷新配置文件
+public class ConfigClientController {
+
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/info")
+    public String configInfo(){
+        return configInfo;
+    }
+}
+```
 
 
 
+```java
+@EnableEurekaClient
+@SpringBootApplication
+public class ConfigClientMain3366 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigClientMain3366.class,args);
+    }
+}
+```
 
 
 
+bootstrap.yaml
+
+```yaml
+server:
+  port: 3366
+
+spring:
+  application:
+    name: config-client
+  cloud:
+    #Config客户端配置
+    config:
+      label: master #分支名称
+      name: config #配置文件名称
+      profile: dev #读取后缀名称   上述3个综合：master分支上config-dev.yml的配置文件被读取http://config-3344.com:3344/master/config-dev.yml
+      uri: http://127.0.0.1:3344 #配置中心地址k
+  rabbitmq:
+    host: 192.168.1.7
+    port: 5672
+    username: rabboy
+    password: 1
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
+  instance:
+    prefer-ip-address: true
+    instance-id: config-clent3366
+```
 
 
 
+```java
+@RestController
+@RefreshScope //用于动态刷新配置文件
+public class ConfigClientController {
+
+    @Value("${config.info}")
+    private String configInfo;
+
+    @Value("${server.port}")
+    private String serverPort;
+
+    @GetMapping("/info")
+    public String configInfo(){
+        return "config info:"+configInfo + "\tport: " + serverPort;
+    }
+}
+```
 
 
+
+```http
+GET http://127.0.0.1:3355/info
+```
+
+```http
+GET http://127.0.0.1:3366/info
+```
+
+
+
+服务端发送通知请求，刷新所有客户端配置
+
+```shell
+curl -X POST http://127.0.0.1:3344/actuator/bus-refresh
+```
+
+
+
+### 定点通知
+
+服务端发送通知请求，刷新特定客户端配置
+
+```shell
+# curl -X POST http://127.0.0.1:3344/actuator/bus-refresh/${spring.application.name}:${server.port}
+curl -X POST http://127.0.0.1:3344/actuator/bus-refresh/config-client:3355 # 只刷新3355服务
+```
 
 
 
