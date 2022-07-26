@@ -2314,23 +2314,841 @@ curl -X POST http://127.0.0.1:3344/actuator/bus-refresh/config-client:3355 # 只
 
 
 
+## 11、Stream消息驱动
+
+消息驱动覆盖原有不同消息实现细节，对外暴露出同意的api调用
+
+
+
+### 典型发布订阅模式搭建
+
+#### 消息驱动服务提供者( 发布者)
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
+        </dependency>
+```
+
+```java
+@SpringBootApplication
+public class StreamMQMain8801 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(StreamMQMain8801.class,args);
+    }
+}
+```
+
+```yaml
+server:
+  port: 8801
+
+spring:
+  application:
+    name: cloud-stream-provider
+  cloud:
+    stream:
+      binders: # 在此处配置要绑定的rabbitmq的服务信息；
+        defaultRabbit: # 表示定义的名称，用于于binding整合
+          type: rabbit # 消息组件类型
+      bindings: # 服务的整合处理
+        output: # 这个名字是一个通道的名称
+          destination: studyExchange # 表示要使用的Exchange名称定义
+          content-type: application/json # 设置消息类型，本次为json，文本则设置“text/plain”
+          binder: defaultRabbit # 设置要绑定的消息服务的具体设置
+  rabbitmq:
+    host: 192.168.1.7
+    port: 5672
+    username: rabboy
+    password: 1
+
+eureka:
+  client:
+    register-with-eureka: true    #表示是否将自己注册进EurekaServer默认为true。
+    fetchRegistry: true     #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    service-url:
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka #集群版
+  instance:
+    instance-id: send-8801   # 服务实例名
+    prefer-ip-address: true     #访问路径可以显示IP地址
+    lease-renewal-interval-in-seconds: 5     #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+    lease-expiration-duration-in-seconds: 30 #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+```
+
+```java
+package com.qibria.cloud.service;
+
+/**
+ * 消息发送者
+ */
+public interface IMessageProvider {
+
+    /**
+     * 发送消息
+     * @return str
+     */
+    String send();
+
+}
+
+```
+
+```java
+
+@EnableBinding(Source.class)
+public class MessageProviderImpl implements IMessageProvider {
+
+    private final Logger logger = LoggerFactory.getLogger(MessageProviderImpl.class);
+
+    @Resource
+    private MessageChannel output;
+
+    @Override
+    public String send() {
+        String serial = UUID.randomUUID().toString();
+        output.send(MessageBuilder.withPayload(serial).build());
+        logger.info("-->serial:[{}] ",serial);
+        return null;
+    }
+}
+```
+
+```java
+@RestController
+public class SendMessageController {
+
+    @Resource
+    private IMessageProvider messageProvider;
+
+    @GetMapping("send")
+    public String sendMessage(){
+        return messageProvider.send();
+    }
+}
+```
+
+
+
+#### 消息驱动服务消费者（订阅者）
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+```java
+@SpringBootApplication
+public class StreamMQMain8802 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(StreamMQMain8802.class,args);
+    }
+}
+```
+
+```yaml
+server:
+  port: 8802
+
+spring:
+  application:
+    name: cloud-stream-consumer
+  rabbitmq:
+    host: 192.168.1.7
+    port: 5672
+    username: rabboy
+    password: 1
+  cloud:
+    stream:
+      binders: # 在此处配置要绑定的rabbitmq的服务信息；
+        defaultRabbit: # 表示定义的名称，用于于binding整合
+          type: rabbit # 消息组件类型
+      bindings: # 服务的整合处理
+        input: # 这个名字是一个通道的名称
+          destination: studyExchange # 表示要使用的Exchange名称定义
+          content-type: application/json # 设置消息类型，本次为对象json，如果是文本则设置“text/plain”
+          binder: defaultRabbit # 设置要绑定的消息服务的具体设置
+
+eureka:
+  client:
+    register-with-eureka: true  #表示是否将自己注册进EurekaServer默认为true。
+    fetchRegistry: true         #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+    service-url:
+      defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka #集群版
+  instance:
+    instance-id: provider-8802
+    prefer-ip-address: true     #访问路径可以显示IP地址
+    lease-renewal-interval-in-seconds: 5     #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+    lease-expiration-duration-in-seconds: 30 #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+```
+
+```java
+@Service
+@EnableBinding({Sink.class})
+public class ReceiveMessageListener {
+
+    private final Logger logger = LoggerFactory.getLogger(ReceiveMessageListener.class);
+
+    @Value("${server.port}")
+    private String serverPort;
+
+    @StreamListener(Sink.INPUT)
+    public void input(Message<String> message){
+        logger.info("server port:[{}]", serverPort);
+        logger.info("message:[{}]", message);
+        logger.info("消息内容 message payload: [{}]", message.getPayload());
+    }
+}
+```
+
+
+
+### stream消息重复消费和持久化问题
+
+微服务默认将不同分组，只要完成消息订阅，一旦发布者发布消息，所有分组都会收到并且消费
+
+如果微服务在不同分组中，全部服务都会去消费
+
+在rabbitmq中，这就是典型exchange的fanout（扇出模式）
+
+如果微服务是在相同分组中，那么只有一个服务去完成消费（类似于rabbitmq中的工作队列模式）
+
+在rabbitmq中的队列(queue)对应stream中的分组(group)概念，在springcloud steam中相同分组的的消息指挥被一个服务器消费，不会出现所有服务器都消费同一个消息问题，在rabbitmq中就是说，有多个消费者都订阅了同一个消息队列queue，这时候当且只有一个消费者能收到队列中的消息（work queue---默认轮询方式，也可以手动设置消费方式）
+
+完成分组只需要在配置文件设置一下分组属性就可以
+
+```yaml
+spring:
+  application:
+    name: cloud-stream-consumer
+  cloud:
+      stream:
+        binders: # 在此处配置要绑定的rabbitmq的服务信息；
+          defaultRabbit: # 表示定义的名称，用于于binding整合
+            type: rabbit # 消息组件类型
+            environment: # 设置rabbitmq的相关的环境配置
+              spring:
+                rabbitmq:
+                  host: localhost
+                  port: 5672
+                  username: guest
+                  password: guest
+        bindings: # 服务的整合处理
+          input: # 这个名字是一个通道的名称
+            destination: studyExchange # 表示要使用的Exchange名称定义
+            content-type: application/json # 设置消息类型，本次为对象json，如果是文本则设置“text/plain”
+            binder: defaultRabbit # 设置要绑定的消息服务的具体设置
+            group: group1111 #分组
+```
+
+
+
+消息持久化
+
+
+
+## 12、zipkin与sleuth服务监控
+
+在第二章的Eureka服务基础上进行扩展
+
+添加依赖
+
+```xml
+        <!--包含了sleuth+zipkin-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-zipkin</artifactId>
+        </dependency>
+```
+
+Eurake注册中心7001，7002不需要修改
+
+修改80（服务消费者---调用方），8001（服务提供者---被调用方）
+
+配置文件修改
+
+新增zipkin（注意zipkin是否启动9411）
+
+```yaml
+spring:
+    zipkin:
+      base-url: http://localhost:9411
+    sleuth:
+      sampler:
+        probability: 1 # 采样率
+```
+
+
+
+添加controller---用于服务之间的请求调用
+
+80---消费者端
+
+```java
+    // ====================> zipkin+sleuth
+    @GetMapping("/consumer/payment/zipkin")
+    public String paymentZipkin(){
+        String result = restTemplate.getForObject("http://localhost:8001"+"/payment/zipkin/", String.class);
+        return result;
+    }
+```
+
+
+
+8001---提供者端
+
+```java
+    @GetMapping("/payment/zipkin")
+    public String paymentZipkin(){
+        return "hi ,i'am paymentzipkin server fall back，welcome to atguigu，O(∩_∩)O哈哈~";
+    }
+```
+
+
+
+重复几次请求
+
+```http
+GET http://127.0.0.1/consumer/payment/zipkin
+```
+
+然后访问面板---查看请求之间的关系调用
+
+```http
+GEH http://127.0.0.1:9411/zipkin/
+```
+
+
+
+## 13、springcloudAlibaba nacos
+
+
+
+安装与启动
+
+window10下启动方式
+
+在nacos/bin目录下启动
+
+启动命令 --- 单价版启动方案（默认是集群版）
+
+```shell
+startup.cmd -m standalone
+```
+
+然后访问
+
+```shell
+GET localhost:8848/nanos/
+```
+
+账号密码都是nocas
+
+
+
+### SpringCloudAlibaba与nacos集成
+
+#### 服务提供者
+
+依赖
+
+> **pom.xml**
+
+```xml
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>cloud-api-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!--SpringCloud ailibaba nacos -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <!-- SpringBoot整合Web组件 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+> **PaymentMain9001.java**
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class PaymentMain9001 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentMain9001.class, args);
+    }
+}
+```
+
+> **application.yaml**
+
+```yaml
+server:
+  port: 9001
+
+spring:
+  application:
+    name: nacos-payment-provider
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.7:8848 #配置Nacos地址
+
+#端点暴露
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+```
+
+> **PaymentController.java**
+
+```java
+@RestController
+public class PaymentController {
+
+    @Value("${server.port}")
+    private String serverPort;
+
+    @GetMapping(value = "/payment/nacos/{id}")
+    public CommonResult getPayment(@PathVariable("id") Integer id) {
+
+        String message = "nacos registry, server port:" + serverPort + "\t-->id:" + id;
+        CommonResult result = new CommonResult<>(200,message);
+        return result;
+    }
+}
+
+```
+
+
+
+重复上面步骤新建一个一样的服务
+
+```
+启动类  PaymentMain9001.java
+配置文件 application.yaml server.port:9002
+```
+
+
+
+#### 服务消费者
+
+> **pom.xml**
+
+```xml
+        <!--SpringCloud ailibaba nacos -->
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>cloud-api-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <!-- SpringBoot整合Web组件 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+
+
+> **主启动类 OrderNacosMain83.java**
+
+```java
+@EnableDiscoveryClient
+@SpringBootApplication
+public class OrderNacosMain83 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(OrderNacosMain83.class,args);
+    }
+}
+```
+
+
+
+> **application.yaml**
+
+```yaml
+server:
+  port: 83
+
+spring:
+  application:
+    name: nacos-order-consumer
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.7:8848
+
+
+#消费者将要去访问的微服务名称(注册成功进nacos的微服务提供者)
+restTemplate:
+  service-url:
+    nacos-user-service: http://nacos-payment-provider
+```
+
+
+
+> **RestTemplate.java**
+
+```java
+@Configuration
+public class RestTemplateConfig {
+
+    private final Logger logger = LoggerFactory.getLogger(RestTemplateConfig.class);
+
+    @Value("${restTemplate.service-url.nacos-user-service}")
+    private String nacosServer;
+
+    @Bean
+    @LoadBalanced
+    public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder){
+        logger.info("nacosServer:[{}]", nacosServer);
+        return restTemplateBuilder.rootUri(nacosServer).build();
+    }
+}
+```
+
+
+
+> **OrderNacosController.java**
+
+```java
+@RestController
+public class OrderNacosController {
+
+    @Resource
+    private RestTemplate restTemplate;
+
+    @GetMapping(value = "/consumer/payment/nacos/{id}")
+    public String paymentInfo(@PathVariable("id") Long id) {
+
+        return restTemplate.getForObject("/payment/nacos/"+id,String.class);
+    }
+}
+```
+
+
+
+## 14、springcloudalibaba nacos config
+
+
+
+### 基本配置
+
+> **pom.xml**
+
+```xml
+        <!--nacos-config-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        <!--nacos-discovery-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <!--web + actuator-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+```
+
+
+
+> **NacosConfigClientMain3377.java**
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class NacosConfigClientMain3377 {
+
+    public static void main(String[] args) {
+        SpringApplication.run(NacosConfigClientMain3377.class, args);
+    }
+}
+```
+
+
+
+> **bootstrap.yaml**
+
+```yaml
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.7:8848 #Nacos服务注册中心地址
+      config:
+        server-addr: 192.168.1.7:8848 #Nacos作为配置中心地址
+        file-extension: yaml #指定yaml格式的配置
+        #group: DEFAULT_GROUP
+        #namespace: ab2faf1fe8da9df7ed774d883fcf13c1
+
+# ${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+# nacos-config-client-dev.yaml
+
+# nacos-config-client-test.yaml   ----> config.info
+
+
+```
+
+
+
+> **application.yaml**
+
+```yaml
+spring:
+  profiles:
+    active: dev # 表示开发环境
+    #active: test # 表示测试环境
+    #active: info
+
+```
+
+
+
+> **application-dev.yaml**
+
+```yaml
+server:
+  port: 3377
+
+spring:
+  application:
+    name: nacos-config-client
+
+
+#配置中心
+#config:
+#  info: |
+#    nacos config center.
+#    path = nacos-config-client-dev.yaml.
+#    version = 1.
+```
+
+
+
+> **application-test.yaml**
+
+```yaml
+server:
+  port: 3378
+
+spring:
+  application:
+    name: nacos-config-client
+
+
+#配置中心
+#config:
+#  info: |
+#    nacos config center.
+#    path = nacos-config-client-test.yaml.
+#    version = 1.
+```
+
+
+
+配置中心 config副本
+
+> nacos-config-client-dev.yaml
+
+```yaml
+config:
+  info: |
+    nacos config center.
+    path = nacos-config-client-dev.yaml.
+    version = 1.
+```
+
+
+
+> nacos-config-client-test.yaml
+
+```yaml
+config:
+  info: |
+    nacos config center.
+    path = nacos-config-client-test.yaml.
+    version = 1.
+```
 
 
 
 
 
+> **ConfigClientController.java**
+
+```java
+@RestController
+//@RefreshScope(proxyMode = ScopedProxyMode.DEFAULT)//支持Nacos的动态刷新功能。
+@RefreshScope//支持Nacos的动态刷新功能。
+public class ConfigClientController {
+
+    @Value("${config.info}")
+    private String configInfo;
+
+    @Value("${spring.profiles.active}")
+    private String profiles;
+
+
+    @GetMapping("/config/info")
+    public String getConfigInfo() {
+        return "profiles active: "+ profiles +
+                "\n\rconfig info: "+ configInfo;
+    }
+}
+```
+
+```http
+GET http://localhost:3378/config/info
+
+GET http://localhost:3377/config/info
+```
 
 
 
+### 分组与命名空间
+
+#### - 分组
+
+配置文件修改
+
+> **bootsrap.yaml**
+
+```yaml
+server:
+  port: 3377
+spring:
+  application:
+    name: nacos-config-client
+  profiles:
+    #active: dev # 表示开发环境
+    #active: test # 表示测试环境
+    active: info
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.7:8848 #Nacos服务注册中心地址
+      config:
+        server-addr: 192.168.1.7:8848 #Nacos作为配置中心地址
+        file-extension: yaml #指定yaml格式的配置
+        group: DEV_GROUP 
+        #group: TEST_GROUP
+        #namespace: ab2faf1fe8da9df7ed774d883fcf13c1
+
+
+# ${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+# nacos-config-client-dev.yaml
+
+# nacos-config-client-test.yaml   ----> config.info
+
+```
 
 
 
+**配置中心 nacos config**
 
 
 
+作用: 使用分组进行服务环境的隔离与切换
 
 
 
+添加分组与配置文件
+
+> Group: DEV_GROUP
+
+> Data Id: nacos-config-client-info.yaml
+
+```yaml
+config:
+  info: |
+    nacos config center.
+    group = DEV_GROUP.
+    path = nacos-config-client-info.yaml.
+    version = 1.
+```
 
 
+
+> Group: TEST_GROUP
+
+> Data Id: nacos-config-client-info.yaml
+
+```yaml
+config:
+  info: |
+    nacos config center.
+    group = TEST_GROUP.
+    path = nacos-config-client-info.yaml.
+    version = 1.
+```
+
+
+
+测试链接
+
+```http
+GET http://localhost:3377/config/info
+```
+
+
+
+#### - 命名空间
 
