@@ -1,10 +1,6 @@
 # SpringCloud
 
-
-
 ![image-20220720163007385](SpringCloud.assets/image-20220720163007385.png)
-
-
 
 ## 依赖管理
 
@@ -79,8 +75,6 @@
 </project>
 ```
 
-
-
 Eureka服务注册中心依赖
 
 ```xml
@@ -105,8 +99,6 @@ Eureka服务注册中心依赖
     </dependencies>
 ```
 
-
-
 Eureka客户服务依赖
 
 ```xml
@@ -130,16 +122,9 @@ Eureka客户服务依赖
             <version>${project.version}</version>
         </dependency>
     </dependencies>
-
 ```
 
-
-
-
-
 ## 1、RestTemplate 服务调用
-
-
 
 注册bean组件
 
@@ -196,7 +181,6 @@ public class HelloController {
     }
 
 }
-
 ```
 
 服务提供者
@@ -224,10 +208,6 @@ public class HelloController {
     }
 }
 ```
-
-
-
-
 
 ## 2、Eureka服务注册中心使用
 
@@ -305,10 +285,7 @@ eureka:
     #lease-renewal-interval-in-seconds: 1
     #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
     #lease-expiration-duration-in-seconds: 2
-
 ```
-
-
 
 ### 多注册中心实例
 
@@ -343,8 +320,6 @@ eureka:
       #eviction-interval-timer-in-ms: 2000
 ```
 
-
-
 ```java
 @EnableEurekaServer //代表此服务是注册中心
 @SpringBootApplication
@@ -376,8 +351,6 @@ eureka:
       #eviction-interval-timer-in-ms: 2000
 ```
 
-
-
 注册服务实例(每个实例都都注册进注册中心)
 
 ```java
@@ -389,8 +362,6 @@ public class PaymentMain8001 {
     }
 }
 ```
-
-
 
 ```yaml
 server:
@@ -420,7 +391,6 @@ eureka:
     #lease-renewal-interval-in-seconds: 1
     #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
     #lease-expiration-duration-in-seconds: 2
-
 ```
 
 服务消费者
@@ -511,11 +481,7 @@ public class HelloController {
 }
 ```
 
-
-
 ![image-20220718151701864](SpringCloud.assets/image-20220718151701864.png)
-
-
 
 ### Discovery服务发现
 
@@ -534,15 +500,13 @@ public class PaymentMain8001 {
 }
 ```
 
-
-
 ```java
 @RestController
 public class HelloController {
-    
+
     @GetMapping(value = "/payment/discovery")
     public Object discovery() {
-        
+
         List<String> services = discoveryClient.getServices();
         for (String element : services) {
             log.info("*****element: "+element);
@@ -553,20 +517,16 @@ public class HelloController {
             log.info(instance.getServiceId()+"\t"+
                      instance.getHost()+"\t"+instance.getPort()+"\t"+instance.getUri());
         }
-        
+
         return this.discoveryClient;
     }
-    
+
 }
 ```
-
-
 
 ### Eureka自我保护
 
 客户服务不可用时, Eureka不会立刻清理此服务实例, 根据其保护机制注册中心依然保存此实例，如果在阈值时间内无法收到服务心跳, 注册中心才会将服务实例从注册中心移除, 以此防止注册中心误删因为网络波动而无法发送心跳的服务器
-
-
 
 怎么禁止自我保护
 
@@ -621,8 +581,6 @@ eureka:
     lease-expiration-duration-in-seconds: 2
 ```
 
-
-
 ## 3、Zookeeper注册中心
 
 ```xml
@@ -639,8 +597,6 @@ eureka:
         </dependency>
     </dependencies>
 ```
-
-
 
 ```java
 @SpringBootApplication
@@ -693,10 +649,7 @@ public class HelloController {
         return restTemplate.getForObject("/payment/zk",String.class);
     }
 }
-
 ```
-
-
 
 ```java
 @SpringBootApplication
@@ -734,10 +687,7 @@ public class HelloController {
         return "springCloud with zookeeper: "+serverPort+"\t"+ UUID.randomUUID().toString();
     }
 }
-
 ```
-
-
 
 ## 4、consul
 
@@ -763,10 +713,7 @@ public class HelloController {
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
     </dependencies>
-
 ```
-
-
 
 ```java
 @SpringBootApplication
@@ -823,8 +770,6 @@ public class HelloController {
 }
 ```
 
-
-
 ```java
 @SpringBootApplication
 @EnableDiscoveryClient
@@ -868,8 +813,6 @@ public class HelloController {
 }
 ```
 
-
-
 ## 5、Riboon负载均衡
 
 Eurake默认使用Riboon对RestTemplate做了负载均衡(轮询规则)
@@ -879,7 +822,6 @@ Eurake默认使用Riboon对RestTemplate做了负载均衡(轮询规则)
 > 注意: 此包不能和主启动类在同一个包路径下
 
 ```java
-
 @Configuration
 public class MySelfRule {
     @Bean
@@ -888,8 +830,6 @@ public class MySelfRule {
     }
 }
 ```
-
-
 
 主启功类
 
@@ -904,8 +844,6 @@ public class OrderMain80 {
 }
 ```
 
-
-
 RestTemplate实例
 
 ```java
@@ -919,10 +857,6 @@ public class RestTemplateConfig {
 }
 ```
 
-
-
-
-
 ### 自定义实现负载均衡（轮询）
 
 使用cps和回旋锁实现
@@ -935,7 +869,7 @@ public interface LoadBalancer{
 }
 ```
 
-实现类 
+实现类
 
 ```java
 @Component
@@ -962,10 +896,7 @@ public class MyLB implements LoadBalancer{
         return serviceInstances.get(index);
     }
 }
-
 ```
-
-
 
 ```java
 @Configuration
@@ -977,8 +908,6 @@ public class RestTemplateConfig {
     }
 }
 ```
-
-
 
 Controller
 
@@ -995,7 +924,7 @@ public class OrderController{
 
     @Resource
     private LoadBalancer loadBalancer;
-    
+
     @Resource
     private DiscoveryClient discoveryClient;
 
@@ -1015,11 +944,9 @@ public class OrderController{
         return restTemplate.getForObject(uri+"/payment/lb",String.class);
 
     }
-  
+
 }
 ```
-
-
 
 ## 6、Openfeign服务调用(面向消费者)
 
@@ -1054,8 +981,6 @@ public class OrderController{
     </dependencies>
 ```
 
-
-
 ```java
 @SpringBootApplication
 @EnableFeignClients
@@ -1085,17 +1010,14 @@ eureka:
       #defaultZone: http://localhost:7001/eureka
       # 集群
       defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
-      
+
 #设置feign客户端超时时间(OpenFeign默认支持ribbon)
 ribbon:
   #指的是建立连接所用的时间，适用于网络状况正常的情况下,两端连接所用的时间
   ReadTimeout: 5000
   #指的是建立连接后从服务器读取到可用资源所用的时间
   ConnectTimeout: 5000
-      
 ```
-
-
 
 ```java
 @Service
@@ -1109,8 +1031,6 @@ public interface PaymentFeignService {
     String paymentFeignTimeout();
 }
 ```
-
-
 
 ```java
 @RestController
@@ -1128,8 +1048,6 @@ public class HelloController {
     }
 }
 ```
-
-
 
 开启日志
 
@@ -1183,8 +1101,6 @@ logging:
     com.qibria.cloud.service.PaymentFeignService: debug
 ```
 
-
-
 ## 7、Hystrix 服务熔断、降级、限流
 
 ```xml
@@ -1222,8 +1138,6 @@ logging:
     </dependencies>
 ```
 
-
-
 ### 服务降级
 
 服务端降级
@@ -1239,8 +1153,6 @@ public class PaymentHystrixMain8001 {
     }
 }
 ```
-
-
 
 ```yaml
 server:
@@ -1271,10 +1183,7 @@ eureka:
     #lease-renewal-interval-in-seconds: 1
     #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
     #lease-expiration-duration-in-seconds: 2
-
 ```
-
-
 
 ```java
 package com.qibria.cloud.service;
@@ -1323,8 +1232,6 @@ public class PaymentService {
 }
 ```
 
-
-
 ```java
 @RestController
 public class PaymentController {
@@ -1355,8 +1262,6 @@ public class PaymentController {
 }
 ```
 
-
-
 客户端降级
 
 ```java
@@ -1368,7 +1273,6 @@ public class OrderHystrixMain80 {
         SpringApplication.run(OrderHystrixMain80.class,args);
     }
 }
-
 ```
 
 ```yaml
@@ -1413,8 +1317,6 @@ feign:
     enabled: true
 ```
 
-
-
 ```java
 @Component
 //使用openfeign统一进行服务降级 PaymentFallbackService.class
@@ -1428,10 +1330,7 @@ public interface PaymentHystrixService {
     public String paymentInfo_TimeOut(@PathVariable("id") Integer id);
 
 }
-
 ```
-
-
 
 实现类
 
@@ -1450,8 +1349,6 @@ public class PaymentFallbackService implements PaymentHystrixService {
     }
 }
 ```
-
-
 
 ```java
 @RestController
@@ -1491,14 +1388,9 @@ public class OrderHystrixController {
 }
 ```
 
-
-
 ### 服务熔断
 
-
-
 ```java
-
 @Service
 public class PaymentService {
 
@@ -1518,16 +1410,13 @@ public class PaymentService {
 
         return Thread.currentThread().getName()+"\t"+"调用成功，流水号: " + serialNumber;
     }
- 
+
     public String paymentCircuitBreaker_fallback(@PathVariable("id") Integer id) {
         return "id 不能负数，请稍后再试，/(ㄒoㄒ)/~~   id: " +id;
     }
 
 }
-
 ```
-
-
 
 ```java
     //====服务熔断
@@ -1540,8 +1429,6 @@ public class PaymentService {
     }
 ```
 
-
-
 ### 服务面板
 
 ```xml
@@ -1550,8 +1437,6 @@ public class PaymentService {
             <artifactId>spring-cloud-starter-netflix-hystrix-dashboard</artifactId>
         </dependency>
 ```
-
-
 
 ## 8、Gateway服务网关
 
@@ -1576,8 +1461,6 @@ public class PaymentService {
     </dependencies>
 ```
 
-
-
 ```java
 @SpringBootApplication
 public class GateWayMain9527 {
@@ -1587,8 +1470,6 @@ public class GateWayMain9527 {
     }
 }
 ```
-
-
 
 ```yaml
 server:
@@ -1630,10 +1511,7 @@ eureka:
     fetchRegistry: true
     service-url:
       defaultZone: http://127.0.0.1:7001/eureka,http://127.0.0.1:7002/eureka  # 集群版
-
 ```
-
-
 
 上面用配置方式配置网关路由断言映射，也可以使用编码方式配置
 
@@ -1653,13 +1531,9 @@ public class GateWayConfig{
 }
 ```
 
-
-
 ### 网关过滤器
 
 全局过滤器、独立过滤器、自定义过滤器
-
-
 
 自定义过滤器
 
@@ -1717,33 +1591,26 @@ public class MyGateWayLogFilter implements GlobalFilter, Ordered {
         return 0;
     }
 }
-
 ```
-
-
 
 ## 9、Config配置中心
 
-
-
 **ssh配置(已弃用)**
 
-如果报如下错误`reject HostKey: github.com`
+如果报如下错误 `reject HostKey: github.com`
 原因：同一台电脑使用过两次公钥。
-需要确认一下`ssh -T git@github.com`。回车yes
+需要确认一下 `ssh -T git@github.com`。回车yes
 
-如果报的错误是`Auth fail`
+如果报的错误是 `Auth fail`
 原因：公钥不对。问题如果本地测试可以连接成功，springcloud连接失败，则是生成的问题。
 原来的生成方式：`ssh-keygen -t rsa -C "yourname@your.com"`
 改为：`ssh-keygen -m PEM -t rsa -b 4096 -C "yourname@your.com"`
 
-**使用ed25515(github推荐使用的ssh连接方案，但是springcloud不支持)** 
+**使用ed25515(github推荐使用的ssh连接方案，但是springcloud不支持)**
 
+**使用ecdrsa(最终解决方案)**
 
-
-**使用ecdrsa(最终解决方案)** 
-
->如果都用不了的可是使用https连接方案
+> 如果都用不了的可是使用https连接方案
 
 use ecdsa:
 
@@ -1761,8 +1628,6 @@ Generate a new key
 ssh-keygen -t ecdsa -b 256 -m PEM
 ```
 
-
-
 ssh配置文件
 
 ~/.ssh/config
@@ -1774,10 +1639,6 @@ HostName github.com
 PreferredAuthentications publickey
 IdentityFile ~/.ssh/id_ecdsa
 ```
-
-
-
-
 
 ### 配置中心服务端配置
 
@@ -1801,8 +1662,6 @@ IdentityFile ~/.ssh/id_ecdsa
         </dependency>
 ```
 
-
-
 启动类
 
 ```java
@@ -1815,8 +1674,6 @@ public class ConfigCenterMain3344 {
     }
 }
 ```
-
-
 
 配置文件
 
@@ -1858,15 +1715,11 @@ eureka:
     #lease-expiration-duration-in-seconds: 2
 ```
 
-
-
 **服务端访问路径**
 
 > ${hostname}:{server.port}/${branch}/${filename}
 
 > 127.0.0.1:3344/master/config-dev.yaml
-
-
 
 ### 配置中心客户端配置
 
@@ -1889,8 +1742,6 @@ eureka:
         </dependency>
 ```
 
-
-
 主启动类
 
 ```java
@@ -1903,8 +1754,6 @@ public class ConfigClientMain3355 {
     }
 }
 ```
-
-
 
 配置文件
 
@@ -1931,10 +1780,7 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: config-clent3355
-
 ```
-
-
 
 controller
 
@@ -1952,13 +1798,9 @@ public class ConfigClientController {
 }
 ```
 
-
-
 访问路径
 
 > 127.0.0.1:3355/info
-
-
 
 ### 配置文件动态仓库刷新（有缺陷）
 
@@ -1977,8 +1819,6 @@ management:
         include: "*"
 ```
 
-
-
 @RefreshScope 注解在Controller上
 
 ```java
@@ -1996,8 +1836,6 @@ public class ConfigClientController {
 }
 ```
 
-
-
 此时还不能自动刷新
 
 通过actuator监控器实现手动刷新（可以不用重启服务器，可以说时另类的自动刷新手段，后续自动刷新工作由bus消息总线完成）
@@ -2010,15 +1848,7 @@ public class ConfigClientController {
 
 下一章使用消息总线解决定点刷新
 
-
-
-
-
-##  10、Bus消息总线
-
-
-
-
+## 10、Bus消息总线
 
 配置中心服务端依赖
 
@@ -2055,7 +1885,7 @@ public class ConfigClientController {
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bus-amqp</artifactId>
         </dependency>
-		<dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
@@ -2073,8 +1903,6 @@ public class ConfigClientController {
         </dependency>
 ```
 
-
-
 ### 全局通知
 
 **服务端配置**
@@ -2083,7 +1911,7 @@ public class ConfigClientController {
 @SpringBootApplication
 @EnableConfigServer
 public class ConfigCenterMain3344{
-    
+
     public static void main(String[] args) {
             SpringApplication.run(ConfigCenterMain3344.class, args);
     }
@@ -2153,8 +1981,6 @@ public class ConfigClientMain3355 {
 }
 ```
 
-
-
 bootstrap.yaml
 
 ```yaml
@@ -2194,8 +2020,6 @@ eureka:
     instance-id: config-clent3355
 ```
 
-
-
 ```java
 @RestController
 @RefreshScope //用于动态刷新配置文件
@@ -2211,8 +2035,6 @@ public class ConfigClientController {
 }
 ```
 
-
-
 ```java
 @EnableEurekaClient
 @SpringBootApplication
@@ -2223,8 +2045,6 @@ public class ConfigClientMain3366 {
     }
 }
 ```
-
-
 
 bootstrap.yaml
 
@@ -2263,8 +2083,6 @@ eureka:
     instance-id: config-clent3366
 ```
 
-
-
 ```java
 @RestController
 @RefreshScope //用于动态刷新配置文件
@@ -2283,8 +2101,6 @@ public class ConfigClientController {
 }
 ```
 
-
-
 ```http
 GET http://127.0.0.1:3355/info
 ```
@@ -2293,15 +2109,11 @@ GET http://127.0.0.1:3355/info
 GET http://127.0.0.1:3366/info
 ```
 
-
-
 服务端发送通知请求，刷新所有客户端配置
 
 ```shell
 curl -X POST http://127.0.0.1:3344/actuator/bus-refresh
 ```
-
-
 
 ### 定点通知
 
@@ -2312,13 +2124,9 @@ curl -X POST http://127.0.0.1:3344/actuator/bus-refresh
 curl -X POST http://127.0.0.1:3344/actuator/bus-refresh/config-client:3355 # 只刷新3355服务
 ```
 
-
-
 ## 11、Stream消息驱动
 
 消息驱动覆盖原有不同消息实现细节，对外暴露出同意的api调用
-
-
 
 ### 典型发布订阅模式搭建
 
@@ -2404,11 +2212,9 @@ public interface IMessageProvider {
     String send();
 
 }
-
 ```
 
 ```java
-
 @EnableBinding(Source.class)
 public class MessageProviderImpl implements IMessageProvider {
 
@@ -2440,8 +2246,6 @@ public class SendMessageController {
     }
 }
 ```
-
-
 
 #### 消息驱动服务消费者（订阅者）
 
@@ -2529,8 +2333,6 @@ public class ReceiveMessageListener {
 }
 ```
 
-
-
 ### stream消息重复消费和持久化问题
 
 微服务默认将不同分组，只要完成消息订阅，一旦发布者发布消息，所有分组都会收到并且消费
@@ -2569,11 +2371,7 @@ spring:
             group: group1111 #分组
 ```
 
-
-
 消息持久化
-
-
 
 ## 12、zipkin与sleuth服务监控
 
@@ -2606,8 +2404,6 @@ spring:
         probability: 1 # 采样率
 ```
 
-
-
 添加controller---用于服务之间的请求调用
 
 80---消费者端
@@ -2621,8 +2417,6 @@ spring:
     }
 ```
 
-
-
 8001---提供者端
 
 ```java
@@ -2631,8 +2425,6 @@ spring:
         return "hi ,i'am paymentzipkin server fall back，welcome to atguigu，O(∩_∩)O哈哈~";
     }
 ```
-
-
 
 重复几次请求
 
@@ -2646,11 +2438,7 @@ GET http://127.0.0.1/consumer/payment/zipkin
 GEH http://127.0.0.1:9411/zipkin/
 ```
 
-
-
 ## 13、springcloudAlibaba nacos
-
-
 
 安装与启动
 
@@ -2671,8 +2459,6 @@ GET localhost:8848/nanos/
 ```
 
 账号密码都是nocas
-
-
 
 ### SpringCloudAlibaba与nacos集成
 
@@ -2737,7 +2523,6 @@ management:
     web:
       exposure:
         include: '*'
-
 ```
 
 > **PaymentController.java**
@@ -2757,10 +2542,7 @@ public class PaymentController {
         return result;
     }
 }
-
 ```
-
-
 
 重复上面步骤新建一个一样的服务
 
@@ -2768,8 +2550,6 @@ public class PaymentController {
 启动类  PaymentMain9001.java
 配置文件 application.yaml server.port:9002
 ```
-
-
 
 #### 服务消费者
 
@@ -2797,8 +2577,6 @@ public class PaymentController {
         </dependency>
 ```
 
-
-
 > **主启动类 OrderNacosMain83.java**
 
 ```java
@@ -2811,8 +2589,6 @@ public class OrderNacosMain83 {
     }
 }
 ```
-
-
 
 > **application.yaml**
 
@@ -2835,8 +2611,6 @@ restTemplate:
     nacos-user-service: http://nacos-payment-provider
 ```
 
-
-
 > **RestTemplate.java**
 
 ```java
@@ -2857,8 +2631,6 @@ public class RestTemplateConfig {
 }
 ```
 
-
-
 > **OrderNacosController.java**
 
 ```java
@@ -2876,13 +2648,9 @@ public class OrderNacosController {
 }
 ```
 
-
-
 ## 14、springcloudalibaba nacos config
 
-
-
-### 基本配置
+### 基本配置DataId
 
 > **pom.xml**
 
@@ -2908,8 +2676,6 @@ public class OrderNacosController {
         </dependency>
 ```
 
-
-
 > **NacosConfigClientMain3377.java**
 
 ```java
@@ -2922,8 +2688,6 @@ public class NacosConfigClientMain3377 {
     }
 }
 ```
-
-
 
 > **bootstrap.yaml**
 
@@ -2943,11 +2707,7 @@ spring:
 # nacos-config-client-dev.yaml
 
 # nacos-config-client-test.yaml   ----> config.info
-
-
 ```
-
-
 
 > **application.yaml**
 
@@ -2957,10 +2717,7 @@ spring:
     active: dev # 表示开发环境
     #active: test # 表示测试环境
     #active: info
-
 ```
-
-
 
 > **application-dev.yaml**
 
@@ -2981,8 +2738,6 @@ spring:
 #    version = 1.
 ```
 
-
-
 > **application-test.yaml**
 
 ```yaml
@@ -3002,8 +2757,6 @@ spring:
 #    version = 1.
 ```
 
-
-
 配置中心 config副本
 
 > nacos-config-client-dev.yaml
@@ -3016,8 +2769,6 @@ config:
     version = 1.
 ```
 
-
-
 > nacos-config-client-test.yaml
 
 ```yaml
@@ -3027,10 +2778,6 @@ config:
     path = nacos-config-client-test.yaml.
     version = 1.
 ```
-
-
-
-
 
 > **ConfigClientController.java**
 
@@ -3060,8 +2807,6 @@ GET http://localhost:3378/config/info
 
 GET http://localhost:3377/config/info
 ```
-
-
 
 ### 分组与命名空间
 
@@ -3097,18 +2842,11 @@ spring:
 # nacos-config-client-dev.yaml
 
 # nacos-config-client-test.yaml   ----> config.info
-
 ```
-
-
 
 **配置中心 nacos config**
 
-
-
 作用: 使用分组进行服务环境的隔离与切换
-
-
 
 添加分组与配置文件
 
@@ -3125,8 +2863,6 @@ config:
     version = 1.
 ```
 
-
-
 > Group: TEST_GROUP
 
 > Data Id: nacos-config-client-info.yaml
@@ -3140,15 +2876,94 @@ config:
     version = 1.
 ```
 
-
-
 测试链接
 
 ```http
 GET http://localhost:3377/config/info
 ```
 
-
-
 #### - 命名空间
+
+配置文件修改
+
+
+```yaml
+
+server:
+  port: 3377
+spring:
+  application:
+    name: nacos-config-client
+  profiles:
+    active: dev # 表示开发环境
+    #active: test # 表示测试环境
+    #active: info
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.7:8848 #Nacos服务注册中心地址
+      config:
+        server-addr: 192.168.1.7:8848 #Nacos作为配置中心地址
+        file-extension: yaml #指定yaml格式的配置
+        group: DEFAULT_GROUP 
+        #group: DEV_GROUP 
+        #group: TEST_GROUP
+        namespace: ab2faf1fe8da9df7ed774d883fcf13c1 # 命名空间
+
+# ${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+# nacos-config-client-dev.yaml
+# nacos-config-client-test.yaml   ----> config.info
+```
+
+
+**配置中心 nacos config**
+
+新建命名空间dev、test
+
+默认命名空间public
+
+拿到 dev 的命名空间id: ab2faf1fe8da9df7ed774d883fcf13c1
+
+添加分组与配置文件
+
+> Group: DEFAULT_GROUP
+
+> Data Id: nacos-config-client-info.yaml
+
+```yaml
+config:
+  info: |
+    nacos config center.
+    namespace = ab2faf1fe8da9df7ed774d883fcf13c1
+    group = DEFAULT_GROUP.
+    path = nacos-config-client-info.yaml.
+    version = 1.
+```
+
+
+
+
+### Nacos命名空间分组和DataID三者关系
+
+
+**命名空间（Namespace）**
+​ 用于进行租户粒度的配置隔离。不同的命名空间下，可以存在相同的 Group 或 Data ID 的配置。Namespace 的常用场景之一是不同环境的配置的区分隔离，例如开发测试环境和生产环境的资源（如配置、服务）隔离等。
+
+**配置分组（Group）**
+​ Nacos 中的一组配置集，是组织配置的维度之一。通过一个有意义的字符串（如 Buy 或 Trade ）对配置集进行分组，从而区分 Data ID 相同的配置集。当您在 Nacos 上创建一个配置时，如果未填写配置分组的名称，则配置分组的名称默认采用 DEFAULT_GROUP 。配置分组的常见场景：不同的应用或组件使用了相同的配置类型，如 database_url 配置和 MQ_topic 配置。
+**配置集 ID（Data ID）**
+​ Nacos 中的某个配置集的 ID。配置集 ID 是组织划分配置的维度之一。Data ID 通常用于组织划分系统的配置集。一个系统或者应用可以包含多个配置集，每个配置集都可以被一个有意义的名称标识。Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性。此命名规则非强制。
+​ 配置集：一组相关或者不相关的配置项的集合称为配置集。在系统中，一个配置文件通常就是一个配置集，包含了系统各个方面的配置。例如，一个配置集可能包含了数据源、线程池、日志级别等配置项。
+**三者关系**
+​ 这三者的关系类似于Java里面的package名和类名，最外层的Namespace是可以用于区分部署环境的，Group和DataID逻辑上区分两个目标对象。
+
+**默认情况**
+Namespace=public，Group=DEFAULT_GROUP，默认Cluster是DEFAULT
+
+**具体情况**
+​ Nacos默认的命名空间是public，我们就可以利用Namespace来实现隔离，比如我们现在有三个环境：开发、测试、生产环境，我们就可以创建三个Namespace，不同的N amespace之间是隔离的。
+​ Group本身就是分组的意思，它可以把不同的微服务划分到同一个分组里面去。
+
+​ 剩下的就是具体微服务，一个Service可以包含多个Cluster，Nacos默认Cluster是DEFAULT，Cluster是对指定微服务的一个虚拟划分。比如说，将一个Service部署在北京和和杭州的机房中，北京机房的Service就可以起名为（BJ），杭州机房中的Service就可以起名为（HZ），这样就可以尽量让同一个机房的微服务互相调用，提升性能。
+
 
