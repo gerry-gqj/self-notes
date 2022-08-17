@@ -14,16 +14,15 @@
   <div id="app"></div>
   <script>
     window.$docsify = {
-      coverpage: {
-        '/': 'coverpage.md',
-        docsifyPrism:{
-          init:function(){
-             Prism.plugins.autoloader.languages_path = './js/prism-components/'
-             Prism.plugins.customClass.prefix('prism-')
-            //Prism.plugins.autoloader.languages_path = 'https://unpkg.com/prismjs@1.17.1/components/'
-          }
+      coverpage: {'/': 'coverpage.md'},
+      docsifyPrism:{
+        init:function(){
+          Prism.plugins.autoloader.languages_path = './js/prism-components/'
+          //Prism.plugins.customClass.prefix('prism-')
+          //Prism.plugins.autoloader.languages_path = 'https://unpkg.com/prismjs@1.17.1/components/'
         }
-      }
+      },
+
     }
   </script>
   <script src="js/docsify.min.js"></script>

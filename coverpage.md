@@ -12,7 +12,12 @@
 
 <!-- 背景图片 -->
 
-[comment]: <> (![]&#40;_media/bg.jpg&#41;)
+[comment]: <> (![]&#40;media/bg.jpg&#41;)
+
 
 [GitHub](https://github.com/gerry-gqj/self-notes)
 [Get Started](#main)
+
+
+<!-- 背景色 -->
+[comment]: <> (![color]&#40;#EA6F5A&#41;)
