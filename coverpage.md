@@ -1,6 +1,6 @@
 <!-- coverpage.md -->
 
-![logo](./_media/icon.jpg)
+![logo](media/icon.jpg)
 
 # docsify <small>3.5</small>
 
