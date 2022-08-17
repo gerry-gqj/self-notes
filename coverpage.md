@@ -1,4 +1,4 @@
-<!-- _coverpage.md -->
+<!-- coverpage.md -->
 
 ![logo](./_media/icon.jpg)
 
@@ -14,5 +14,5 @@
 
 [comment]: <> (![]&#40;_media/bg.jpg&#41;)
 
-[GitHub](https://github.com/docsifyjs/docsify/)
-[Get Started](#docsify)
+[GitHub](https://github.com/gerry-gqj/self-notes)
+[Get Started](#main)
