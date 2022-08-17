@@ -10,5 +10,6 @@
     <orderEntry type="library" name="prism-autoloader" level="application" />
     <orderEntry type="library" name="prism-custom-class" level="application" />
     <orderEntry type="library" name="prism-line-numbers" level="application" />
+    <orderEntry type="library" name="docsify-themeable" level="application" />
   </component>
 </module>
