@@ -6,5 +6,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="docsify" level="application" />
+    <orderEntry type="library" name="docsify-prism" level="application" />
+    <orderEntry type="library" name="prism-autoloader" level="application" />
   </component>
 </module>

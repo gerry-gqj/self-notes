@@ -43,3 +43,9 @@
 * [k8s基础入门](docs/k8s基础.md)
 * [docker入门](docs/docker入门.md)
 
+
+```java
+public void hello(){
+    System.out.println("hello world")
+}
+```
