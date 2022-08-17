@@ -42,10 +42,3 @@
 * [服务器环境配置记录](docs/服务器环境配置记录.md)
 * [k8s基础入门](docs/k8s基础.md)
 * [docker入门](docs/docker入门.md)
-
-
-```java
-public void hello(){
-    System.out.println("hello world")
-}
-```
