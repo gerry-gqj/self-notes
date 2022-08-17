@@ -11,7 +11,8 @@
 - 众多主题
 
 <!-- 背景图片 -->
-![](_media/bg.jpg)
+
+[comment]: <> (![]&#40;_media/bg.jpg&#41;)
 
 [GitHub](https://github.com/docsifyjs/docsify/)
 [Get Started](#docsify)
