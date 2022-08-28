@@ -1,10 +1,58 @@
 # docker 入门
 
+## 镜像加速
+
+Ubuntu 16.04+、Debian 8+、CentOS 7+
+
+目前主流 Linux 发行版均已使用 [systemd](https://systemd.io/) 进行服务管理，这里介绍如何在使用 systemd 的 Linux 发行版中配置镜像加速器。
+
+请首先执行以下命令，查看是否在 `docker.service` 文件中配置过镜像地址。
+
+```bash
+systemctl cat docker | grep '\-\-registry\-mirror'
+```
+
+如果该命令有输出，那么请执行 `$ systemctl cat docker` 查看 `ExecStart=` 出现的位置，修改对应的文件内容去掉 `--registry-mirror` 参数及其值，并按接下来的步骤进行配置。
+
+如果以上命令没有任何输出，那么就可以在 `/etc/docker/daemon.json` 中写入如下内容（如果文件不存在请新建该文件）：
+
+```json
+{
+  "registry-mirrors": [
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ]
+}
+
+```
+
+> 注意，一定要保证该文件符合 json 规范，否则 Docker 将不能启动。
+
+之后重新启动服务。
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+Windows 10
+
+对于使用 `Windows 10` 的用户，在任务栏托盘 Docker 图标内右键菜单选择 `Settings`，打开配置窗口后在左侧导航菜单选择 `Docker Engine`，在右侧像下边一样编辑 json 文件，之后点击 `Apply & Restart` 保存后 Docker 就会重启并应用配置的镜像地址了。
+
+```json
+{
+  "registry-mirrors": [
+   "https://hub-mirror.c.163.com",
+   "https://mirror.baidubce.com"
+  ]
+}
+```
+
+
+
 docker基本组成
 
 容器（container）、仓库（repository）、镜像（image）
-
-
 
 ## 命令
 
@@ -389,6 +437,18 @@ docker push 192.168.1.5:5000/qibria/debian11:latest
 # docker run -it -v /宿主机目录:/容器内目录 ubuntu /bin/bash
 docker run -it --name myu3 --privileged=true -v /tmp/myHostData:/tmp/myDockerData ubuntu /bin/bash
 ```
+
+```bash
+docker volume create my-vol
+
+docker run -d -P \
+    --name web \
+    # -v my-vol:/usr/share/nginx/html \
+    --mount source=my-vol,target=/usr/share/nginx/html \
+    nginx:alpine
+```
+
+
 
 ```shell
 # 查看容器详细信息
