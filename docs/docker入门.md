@@ -628,6 +628,20 @@ bind-address=0.0.0.0
 default-time_zone='+8:00'
 ```
 
+最新文件
+
+>  **/etc/mysql/conf.d/my.conf**
+
+```shell
+docker run -d -p 3300:3306 --provileged=true 
+-v /var/data/docker/volume/mysql/5.7/log:/var/log/mysql
+-v /var/data/docker/volume/mysql/5.7/data:/var/lib/mysql 
+-v /var/data/docker/volume/mysql/5.7/conf:/etc/mysql/conf.d
+-e MYSQL_ROOT_PASSWORD=root
+--name mysql-5.7-3300
+mysql:5.7
+```
+
 
 
 #### - redis
