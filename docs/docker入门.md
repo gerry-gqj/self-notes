@@ -1454,6 +1454,20 @@ docker-compose stop    # 停止服务
 
 
 
+```bash
+#启动 
+docker-compose -f standalone-derby.yaml up
+#关闭
+docker-compose -f standalone-derby.yaml stop
+#移除
+docker-compose -f standalone-derby.yaml rm
+#关闭并移除
+docker-compose -f standalone-derby.yaml down
+
+```
+
+
+
 ### docker-compose.yml
 
 ```yaml
@@ -1501,8 +1515,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password #解决外部无法访问
 networks: # docker network create atguigu_net
    atguigu_net: 
-   
-   
+  
 ```
 
 
